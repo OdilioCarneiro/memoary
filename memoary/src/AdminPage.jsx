@@ -4,7 +4,7 @@ import './AdminPage.css';
 // Lê a URL do Render ou usa o localhost
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
-  : 'https://SEU-BACKEND.onrender.com'; // Lembre-se de colocar sua URL real aqui!
+  : 'https://memoary.onrender.com'; // Lembre-se de colocar sua URL real aqui!
 
 export default function AdminPage() {
   const [pages, setPages] = useState([]);
