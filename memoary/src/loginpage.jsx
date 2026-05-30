@@ -1,0 +1,87 @@
+import { useState } from 'react';
+import './AdminPage.css'; // Podemos reaproveitar o CSS que já fizemos!
+
+export default function LoginPage({ onLoginSuccess }) {
+  const [usuario, setUsuario] = useState('');
+  const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErro('');
+
+    try {
+      // Aqui faremos a requisição para o nosso back-end validar a senha
+      const response = await fetch('http://localhost:3001/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, senha })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Usuário ou senha incorretos.');
+      }
+
+      // Se deu certo, o back-end vai nos devolver um token
+      // Salvamos esse token no navegador (localStorage) para não perder o login ao atualizar a página
+      localStorage.setItem('adminToken', data.token);
+      
+      // Avisa o aplicativo que o login foi feito com sucesso
+      onLoginSuccess();
+
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="admin-container">
+      <div className="admin-card" style={{ maxWidth: '400px' }}>
+        <h2 className="admin-title dark">Acesso Restrito</h2>
+        <p className="admin-subtitle">Faça login para gerenciar o anuário.</p>
+
+        <form onSubmit={handleLogin} className="admin-form">
+          <div className="input-group">
+            <label htmlFor="usuario" className="admin-label">Usuário</label>
+            <input 
+              type="text" 
+              id="usuario"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              className="text-input"
+              required
+            />
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="senha" className="admin-label">Senha</label>
+            <input 
+              type="password" 
+              id="senha"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              className="text-input"
+              required
+            />
+          </div>
+
+          {erro && (
+            <div className="feedback-message error">
+              {erro}
+            </div>
+          )}
+
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

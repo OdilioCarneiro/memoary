@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Teachers:wght@400;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+/* Variáveis para facilitar a gestão das cores do design */
+:root {
+  --cor-fundo: #faf8f5;
+  --cor-texto: #322A18; /* Marrom escuro exigido */
+  --cor-destaque: #C8AA69; /* Dourado/Areia exigido */
+}
+
+body, html, #root {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--cor-fundo);
+  font-family: 'Teachers', sans-serif;
+  color: var(--cor-texto);
+  overflow-x: hidden;
+}
+
+.app-container {
+  width: 100%;
+  position: relative;
+}
+
+.viewport-hero {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+/* =======================================
+   HEADER (Inicia invisível e pra cima)
+   ======================================= */
+/* Atualize o fixed-header (Remova o opacity e transform iniciais) */
+.fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 90px;
+  z-index: 100;
+  padding: 0 50px;
+  display: flex;
+  align-items: center;
+  pointer-events: none; /* Mantemos apenas isso */
+}
+.header-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo-header { height: 38px; }
+.login-btn {
+  background: transparent;
+  border: 1.5px solid var(--cor-texto);
+  padding: 8px 30px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Teachers', sans-serif;
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+.login-btn:hover { 
+  background: var(--cor-texto); 
+  color: var(--cor-fundo); 
+}
+
+/* =======================================
+   TEXTO DA ESQUERDA (Alinhado à direita de si mesmo)
+   ======================================= */
+.left-hero-panel {
+  position: absolute;
+  left: 10vw;
+  z-index: 2;
+  width: 45vw; /* Dá um pouco mais de espaço */
+  max-width: 550px;
+  display: flex;
+  justify-content: flex-end; /* Empurra o conteúdo interno para a direita */
+}
+
+.slogan-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Alinha o texto e a logo grudados na direita */
+}
+
+.slogan-text {
+  font-size: 2.8rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: right;
+  color: var(--cor-texto);
+}
+
+.highlight-gold { 
+  color: var(--cor-destaque); 
+  font-weight: 600; 
+}
+
+.logo-initial-container { 
+  display: flex; 
+  justify-content: flex-end; 
+  margin-top: 5px; 
+}
+
+.logo-initial { 
+  height: 85px; /* Ajuste o tamanho da sua logo grande aqui */
+}
+
+/* =======================================
+   LIVRO 3D (Mantido como estava, centralizado via GSAP)
+   ======================================= */
+.book-3d-container {
+  position: absolute;
+  top: 50%;
+  left: 75%;
+  width: 440px; 
+  height: 700px;  
+  transform-style: preserve-3d;
+  perspective: 2500px;
+  z-index: 5;
+}
+
+/* ... (Todo o restante do CSS do livro e das páginas que você me enviou permanece idêntico) ... */
+
+/* CAMADAS DO LIVRO */
+.book-cover-3d, .static-page, .flippable-page-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  border-radius: 4px 12px 12px 4px;
+  transform-origin: left center;
+}
+
+.cover-side-front, .cover-side-back, .page-face {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  backface-visibility: hidden;
+  border-radius: 4px 12px 12px 4px;
+  overflow: hidden;
+}
+
+.cover-side-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(to left, #e3dfd3 0%, #f4f1ea 12%, #ffffff 100%);
+  box-shadow: inset 15px 0 25px rgba(0,0,0,0.06);
+  border-radius: 12px 4px 4px 12px;
+}
+.inside-cover-blend { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.watermark-logo { width: 140px; opacity: 0.15; }
+.capa-img-render { width: 100%; height: 100%; object-fit: cover; background: #fff; }
+
+.page-face { padding: 35px; box-shadow: inset 0 0 30px rgba(0,0,0,0.03); }
+.page-front { background: linear-gradient(to right, #dedad0 0%, #faf8f5 6%, #ffffff 100%); transform: rotateY(0deg); }
+.page-back { background: linear-gradient(to left, #dedad0 0%, #faf8f5 6%, #ffffff 100%); transform: rotateY(180deg); border-radius: 12px 4px 4px 12px; }
+
+.drag-overlay {
+  position: absolute; top: 0; left: -100%; width: 200%; height: 100%; z-index: 50; cursor: grab;
+}
+.drag-overlay:active { cursor: grabbing; }
+
+.layout-full-container { width: 100%; height: 100%; margin: -35px; }
+.full-page-image { width: 100%; height: 100%; object-fit: cover; }
+.layout-grid-container { display: flex; flex-direction: column; gap: 20px; height: 100%; justify-content: center; }
+.admin-title { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.01em; }
+.admin-title.gold { color: var(--cor-destaque); }
+.admin-title.dark { color: var(--cor-texto); }
+.admin-img-box { width: 100%; border-radius: 6px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.06); background: #e3dfd3; }
+.admin-custom-img { width: 100%; display: block; object-fit: cover; max-height: 280px; }
+.admin-caption { padding: 10px; background: #fff; font-size: 0.85rem; color: #8b8984; text-align: left; }
+.admin-paragraph { font-size: 0.95rem; line-height: 1.5; color: #5a5955; text-align: justify; }
+
+@media (max-width: 768px) {
+  .left-hero-panel { width: 80%; left: 10%; top: 20%; transform: none; display: flex; justify-content: center; }
+  .slogan-container { align-items: center; }
+  .slogan-text { text-align: center; font-size: 2rem; }
+  .book-3d-container { width: 290px; height: 460px; top: 60%; left: 50%; }
+  .drag-overlay { left: 0; width: 100%; }
+}

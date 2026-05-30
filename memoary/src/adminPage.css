@@ -1,0 +1,121 @@
+.admin-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--cor-fundo);
+  padding: 20px;
+}
+
+.admin-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 500px;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.admin-title.dark {
+  color: var(--cor-texto);
+  margin-bottom: 5px;
+}
+
+.admin-subtitle {
+  color: #8b8984;
+  font-size: 0.95rem;
+  margin-bottom: 30px;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.file-input {
+  padding: 10px;
+  border: 1px dashed #C8AA69; /* Sua cor de destaque */
+  border-radius: 6px;
+  background: var(--cor-fundo);
+  cursor: pointer;
+}
+
+.preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-preview {
+  width: 100%;
+  max-height: 250px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.text-input {
+  padding: 12px;
+  border: 1px solid #e3dfd3;
+  border-radius: 6px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.text-input:focus {
+  border-color: var(--cor-destaque);
+}
+
+.submit-btn {
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  margin-top: 10px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submit-btn:disabled {
+  background: #a3a19b;
+  cursor: not-allowed;
+}
+
+.feedback-message {
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.feedback-message.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.feedback-message.error {
+  background: #ffebee;
+  color: #c62828;
+}
