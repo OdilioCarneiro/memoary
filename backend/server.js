@@ -127,3 +127,25 @@ app.get('/api/anuario', async (req, res) => {
     res.status(500).json({ success: false, message: 'Erro interno ao buscar as páginas.' });
   }
 });
+
+// ROTA PARA CRIAR UMA PÁGINA EM BRANCO
+app.post('/api/anuario/nova-pagina', async (req, res) => {
+  try {
+    const novaPagina = {
+      tipoLayout: 'grid',
+      elementos: [], // Começa sem nenhum elemento dentro (Modo Canva)
+      criadoEm: new Date()
+    };
+
+    const colecao = db.collection('paginas');
+    const resultado = await colecao.insertOne(novaPagina);
+
+    res.status(201).json({ 
+      success: true, 
+      data: { ...novaPagina, _id: resultado.insertedId } 
+    });
+  } catch (error) {
+    console.error('Erro ao criar nova página:', error);
+    res.status(500).json({ success: false, message: 'Erro ao criar página.' });
+  }
+});

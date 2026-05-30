@@ -39,9 +39,26 @@ export default function AdminPage() {
 
   // ... O resto do código continua igualzinho para baixo!
 
-  const handleNovaPagina = () => {
-    // Aqui no futuro abriremos o "Modo Canva" limpo
-    alert("Isso vai criar uma nova página em branco!");
+ const handleNovaPagina = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/anuario/nova-pagina`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        // Adiciona a nova página no estado para ela aparecer na tela imediatamente
+        setPages(prevPages => [...prevPages, data.data]);
+      } else {
+        alert("Não foi possível criar a página no servidor.");
+      }
+    } catch (error) {
+      console.error("Erro ao criar nova página:", error);
+      alert("Erro de conexão ao criar nova página.");
+    }
   };
 
   if (isLoading) {
