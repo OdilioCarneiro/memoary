@@ -2,39 +2,40 @@ import express from 'express';
 import { MongoClient } from 'mongodb';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
-import cors from 'cors'; // Necessário para o React falar com o Express
+import cors from 'cors'; 
 import { Buffer } from 'buffer';
+import process from 'process';
 
-// ... suas importações aqui em cima ...
+// INICIALIZA O DOTENV (Lê o arquivo .env se você estiver rodando no seu computador)
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 app.use(cors()); 
 app.use(express.json());
 
 // ==========================================
-// 1. COLOQUE SUAS CHAVES DO CLOUDINARY AQUI
+// 1. CONFIGURAÇÃO DO CLOUDINARY USANDO .ENV
 // ==========================================
 cloudinary.config({ 
-  cloud_name: 'memoary', // Ex: 'dfxxyz123'
-  api_key: '417464988257681',       // Ex: '123456789012345'
-  api_secret: 'nTsHto-pQ9Cj-zPMFwydwNyqiu0'  // Ex: 'A-bCDefGhIjkLMNopQrStUvWxYz'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // ==========================================
-// 2. COLOQUE SUA STRING DO MONGODB AQUI
+// 2. STRING DO MONGODB USANDO .ENV
 // ==========================================
-// Lembre-se de trocar o <password> pela sua senha real
-const uri = "mongodb+srv://odilionetocarneironogueira_db_user:Odilioneto.22@cluster0.ybmuzjs.mongodb.net/?appName=Cluster0 "
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 let db;
       
 async function conectarBanco() {
   try {
     await client.connect();
-    // Você pode inventar um nome para o seu banco aqui. O MongoDB cria sozinho!
     db = client.db('anuarioDaTurma'); 
     console.log('✅ Conectado ao MongoDB nativo!');
   } catch (error) {
@@ -43,21 +44,25 @@ async function conectarBanco() {
 }
 conectarBanco();
 
-// 4. A Rota POST
+// Rota POST para Upload e Criação de Página
 app.post('/api/anuario', upload.single('image'), async (req, res) => {
   try {
     const { legenda } = req.body;
     
-    // Converte a imagem
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Nenhuma imagem foi enviada.' });
+    }
+
+    // Converte a imagem para Buffer base64
     const b64 = Buffer.from(req.file.buffer).toString("base64");
     let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
 
-    // Upload pro Cloudinary
+    // Upload para o Cloudinary
     const cldRes = await cloudinary.uploader.upload(dataURI, {
       folder: "anuario_disciplina"
     });
 
-    // Objeto do MongoDB
+    // Estrutura o objeto que vai para o MongoDB
     const novaPagina = {
       tipoLayout: 'grid',
       elementos: [
@@ -70,7 +75,7 @@ app.post('/api/anuario', upload.single('image'), async (req, res) => {
       criadoEm: new Date()
     };
 
-    // Salva no banco
+    // Salva no banco de dados
     const colecao = db.collection('paginas');
     const resultado = await colecao.insertOne(novaPagina);
 
@@ -85,7 +90,9 @@ app.post('/api/anuario', upload.single('image'), async (req, res) => {
   }
 });
 
-// Iniciar o servidor
-app.listen(3001, () => {
-  console.log('🚀 Servidor rodando na porta 3001');
+// Configuração da porta dinâmica do Render ou local
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
