@@ -33,8 +33,10 @@ export default function AdminPage() {
       formData.append('image', imageFile);
       formData.append('legenda', legenda);
 
-      // Envia para o nosso servidor back-end que estará rodando na porta 3001
-      const response = await fetch('http://localhost:3001/api/anuario', {
+      // Lê a URL do Render. Se não achar, usa o localhost (para testes no seu PC)
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${API_URL}/api/anuario`, {
         method: 'POST',
         body: formData, 
       });
