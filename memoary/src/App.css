@@ -116,12 +116,9 @@ body, html, #root {
 }
 
 .logo-initial { 
-  height: 85px; /* Ajuste o tamanho da sua logo grande aqui */
+  height: 85px; 
 }
 
-/* =======================================
-   LIVRO 3D (Mantido como estava, centralizado via GSAP)
-   ======================================= */
 .book-3d-container {
   position: absolute;
   top: 50%;
