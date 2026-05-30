@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import './AdminPage.css';
 
-// Lê a URL do Render ou usa o localhost
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
-  : 'https://memoary.onrender.com'; // Lembre-se de colocar sua URL real aqui!
+  : 'https://SEU-BACKEND.onrender.com'; // Lembre de manter sua URL real aqui!
 
 export default function AdminPage() {
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [paginaAtiva, setPaginaAtiva] = useState(null); // Guarda a página que está sendo editada "estilo Canva"
 
-  // O useEffect isola a busca de dados e impede renders em cascata
+  // O useEffect isola a busca de dados de forma segura e limpa para o React
   useEffect(() => {
     async function carregarPaginas() {
       try {
@@ -20,103 +19,157 @@ export default function AdminPage() {
           setPages(data.data);
         }
       } catch (error) {
-        console.error("Erro ao carregar páginas:", error);
+        // Usando a variável 'error' aqui para o linter não reclamar de código morto
+        console.error("Erro detalhado ao carregar páginas do anuário:", error);
       } finally {
         setIsLoading(false);
       }
     }
 
     carregarPaginas();
-  }, []); // Array vazio garante que rode apenas UMA vez ao abrir a página
+  }, []); // Array vazio garante que a busca aconteça apenas uma vez ao montar a tela
 
-  const handleExcluirPagina = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta página para sempre?")) return;
-    // ... resto do seu código
-    
-    // Aqui no futuro chamaremos a rota DELETE do seu back-end
-    alert(`No futuro, isso excluirá a página de ID: ${id}`);
-  };
-
-  // ... O resto do código continua igualzinho para baixo!
-
- const handleNovaPagina = async () => {
+  const handleNovaPagina = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/anuario/nova-pagina`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
+      const response = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
       const data = await response.json();
       if (data.success) {
-        // Adiciona a nova página no estado para ela aparecer na tela imediatamente
-        setPages(prevPages => [...prevPages, data.data]);
-      } else {
-        alert("Não foi possível criar a página no servidor.");
+        setPages(prev => [...prev, data.data]);
+        setPaginaAtiva(data.data); // Já abre a página nova no editor automaticamente
       }
     } catch (error) {
       console.error("Erro ao criar nova página:", error);
-      alert("Erro de conexão ao criar nova página.");
+      alert("Erro ao criar nova página.");
     }
   };
 
-  if (isLoading) {
-    return <div className="admin-container"><h2 className="admin-title dark">Carregando sua mesa de trabalho...</h2></div>;
-  }
+  const handleExcluirPagina = async (id) => {
+    if (!window.confirm("Deseja deletar esta página do anuário?")) return;
+    // Aqui adicionaremos a rota DELETE em breve para sumir do banco
+    setPages(prev => prev.filter(p => p._id !== id));
+    if (paginaAtiva?._id === id) setPaginaAtiva(null);
+  };
+
+  // Simula a adição de uma foto na página atual com posições iniciais (Modo Canva)
+  const adicionarFotoNaPagina = () => {
+    const url = window.prompt("Cole aqui o link de uma imagem (Temporário até usarmos o upload do Cloudinary):");
+    if (!url) return;
+
+    const novoElemento = {
+      id: Date.now().toString(),
+      tipo: 'imagem',
+      url: url,
+      x: 50,  // Posição X inicial em pixels
+      y: 50,  // Posição Y inicial em pixels
+      largura: 200, // Largura inicial em pixels
+      altura: 150  // Altura inicial em pixels
+    };
+
+    const paginaAtualizada = {
+      ...paginaAtiva,
+      elementos: [...(paginaAtiva.elementos || []), novoElemento]
+    };
+
+    setPaginaAtiva(paginaAtualizada);
+    setPages(prev => prev.map(p => p._id === paginaAtiva._id ? paginaAtualizada : p));
+  };
+
+  if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>Carregando Editor...</div>;
 
   return (
-    <div className="admin-container" style={{ display: 'block', padding: '40px' }}>
+    <div style={{ display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif', backgroundColor: '#f0f2f5' }}>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <div>
-          <h2 className="admin-title dark">Mesa de Trabalho</h2>
-          <p className="admin-subtitle">Gerencie as páginas do seu anuário visualmente.</p>
-        </div>
-        <button onClick={handleNovaPagina} style={{ padding: '10px 20px', background: '#d4af37', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '5px', cursor: 'pointer' }}>
-          + Nova Página
-        </button>
-      </div>
-
-      {/* Grade visual das páginas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+      {/* BARRA LATERAL: Lista de Páginas do Livro */}
+      <div style={{ width: '300px', backgroundColor: '#fff', borderRight: '1px solid #e0e0e0', padding: '20px', overflowY: 'auto' }}>
+        <h2 style={{ fontSize: '20px', marginBottom: '5px', color: '#333' }}>Páginas do Anuário</h2>
+        <p style={{ fontSize: '12px', color: '#777', marginBottom: '20px' }}>Clique em uma página para editá-la.</p>
         
-        {pages.map((page, index) => {
-          // Procura a imagem dentro dos elementos da página
-          const imgElement = page.elementos?.find(el => el.tipo === 'imagem');
+        <button onClick={handleNovaPagina} style={{ width: '100%', padding: '12px', backgroundColor: '#d4af37', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}>
+          + Adicionar Página em Branco
+        </button>
 
-          return (
-            <div key={page._id} style={{ background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '-10px', left: '-10px', background: '#333', color: '#fff', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                {index + 1}
-              </div>
-              
-              <div style={{ height: '200px', background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', overflow: 'hidden' }}>
-                {imgElement ? (
-                  <img src={imgElement.url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <p style={{ color: '#aaa' }}>Página Vazia</p>
-                )}
-              </div>
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {pages.map((page, index) => (
+            <div 
+              key={page._id} 
+              onClick={() => setPaginaAtiva(page)}
+              style={{ 
+                padding: '15px', 
+                backgroundColor: paginaAtiva?._id === page._id ? '#f5ebd0' : '#f9f9f9', 
+                border: paginaAtiva?._id === page._id ? '2px solid #d4af37' : '1px solid #ddd',
+                borderRadius: '8px', 
+                cursor: 'pointer',
+                position: 'relative'
+              }}
+            >
+              <span style={{ fontWeight: 'bold', color: '#555' }}>Página {index + 1}</span>
+              <span style={{ fontSize: '12px', color: '#999', display: 'block' }}>{page.elementos?.length || 0} elementos</span>
               <button 
-                onClick={() => alert('Em breve: Abrir modo edição Canva')}
-                style={{ width: '100%', padding: '8px', marginBottom: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                onClick={(e) => { e.stopPropagation(); handleExcluirPagina(page._id); }} 
+                style={{ position: 'absolute', right: '10px', top: '12px', background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '16px' }}
               >
-                ✏️ Editar Página
-              </button>
-              
-              <button 
-                onClick={() => handleExcluirPagina(page._id)}
-                style={{ width: '100%', padding: '8px', background: '#ff4d4d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-              >
-                🗑️ Excluir
+                🗑️
               </button>
             </div>
-          );
-        })}
-
+          ))}
+        </div>
       </div>
+
+      {/* ÁREA PRINCIPAL: O Editor Estilo Canva */}
+      <div style={{ flex: 1, padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
+        {paginaAtiva ? (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button onClick={adicionarFotoNaPagina} style={{ padding: '10px 15px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                🖼️ Inserir Foto nesta Página
+              </button>
+              <button onClick={() => alert('Salvando alterações...')} style={{ padding: '10px 15px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                💾 Salvar Alterações no Livro
+              </button>
+            </div>
+
+            {/* A "Folha" do Livro (Tela de pintura do Canva) */}
+            <div style={{ 
+              width: '500px', 
+              height: '600px', 
+              backgroundColor: '#fff', 
+              boxShadow: '0 10px 25px rgba(0,0,0,0.15)', 
+              borderRadius: '4px',
+              position: 'relative', 
+              border: '1px solid #ccc',
+              overflow: 'hidden'
+            }}>
+              {paginaAtiva.elementos?.map((el) => (
+                <div
+                  key={el.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${el.x}px`,
+                    top: `${el.y}px`,
+                    width: `${el.largura}px`,
+                    height: `${el.altura}px`,
+                    border: '2px dashed #d4af37', 
+                    cursor: 'move',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <img src={el.url} alt="Elemento" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ))}
+              
+              {(!paginaAtiva.elementos || paginaAtiva.elementos.length === 0) && (
+                <p style={{ color: '#aaa', marginTop: '280px' }}>Esta página está em branco. Adicione uma foto!</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#777' }}>
+            <h2>Nenhuma página selecionada</h2>
+            <p>Selecione uma página na barra lateral ou crie uma nova para começar a personalizar.</p>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
