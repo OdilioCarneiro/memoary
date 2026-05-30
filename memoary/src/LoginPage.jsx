@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './AdminPage.css'; // Podemos reaproveitar o CSS que já fizemos!
+import './AdminPage.css';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [usuario, setUsuario] = useState('');
@@ -13,8 +13,10 @@ export default function LoginPage({ onLoginSuccess }) {
     setErro('');
 
     try {
-      // Aqui faremos a requisição para o nosso back-end validar a senha
-      const response = await fetch('http://localhost:3001/api/login', {
+      // Aqui está a mágica: ele tenta ler a URL do Render. Se não achar, usa o localhost.
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, senha })
@@ -26,8 +28,7 @@ export default function LoginPage({ onLoginSuccess }) {
         throw new Error(data.message || 'Usuário ou senha incorretos.');
       }
 
-      // Se deu certo, o back-end vai nos devolver um token
-      // Salvamos esse token no navegador (localStorage) para não perder o login ao atualizar a página
+      // Salvamos o token no navegador
       localStorage.setItem('adminToken', data.token);
       
       // Avisa o aplicativo que o login foi feito com sucesso
