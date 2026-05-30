@@ -96,3 +96,22 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
+
+// ==========================================
+// 3. ROTA DE LOGIN DO ADMINISTRADOR
+// ==========================================
+app.post('/api/login', (req, res) => {
+  const { usuario, senha } = req.body;
+
+  // Aqui nós definimos o seu usuário e senha!
+  const USUARIO_CORRETO = 'admin';
+  const SENHA_CORRETA = 'admin123';
+
+  if (usuario === USUARIO_CORRETO && senha === SENHA_CORRETA) {
+    // Se acertar, devolvemos um "token" falso para o front-end liberar a página
+    res.json({ success: true, token: 'token-super-secreto-do-memoary' });
+  } else {
+    // Se errar, devolvemos erro 401 (Não autorizado)
+    res.status(401).json({ success: false, message: 'Usuário ou senha incorretos.' });
+  }
+});
