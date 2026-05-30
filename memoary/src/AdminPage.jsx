@@ -34,7 +34,10 @@ export default function AdminPage() {
       formData.append('legenda', legenda);
 
       // Lê a URL do Render. Se não achar, usa o localhost (para testes no seu PC)
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+     // Usando a sua própria lógica genial do App.jsx!
+      const API_URL = window.location.hostname === 'localhost'
+        ? 'http://localhost:3001'
+        : 'https://memoary.onrender.com'; 
       
       const response = await fetch(`${API_URL}/api/anuario`, {
         method: 'POST',

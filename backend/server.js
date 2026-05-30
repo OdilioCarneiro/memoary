@@ -97,9 +97,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
-// ==========================================
-// 3. ROTA DE LOGIN DO ADMINISTRADOR
-// ==========================================
+
 app.post('/api/login', (req, res) => {
   const { usuario, senha } = req.body;
 
@@ -113,5 +111,19 @@ app.post('/api/login', (req, res) => {
   } else {
     // Se errar, devolvemos erro 401 (Não autorizado)
     res.status(401).json({ success: false, message: 'Usuário ou senha incorretos.' });
+  }
+});
+
+
+app.get('/api/anuario', async (req, res) => {
+  try {
+    const colecao = db.collection('paginas');
+    // Puxa todas as fotos do banco, ordenando pela data de criação
+    const paginas = await colecao.find({}).sort({ criadoEm: 1 }).toArray();
+    
+    res.json({ success: true, data: paginas });
+  } catch (error) {
+    console.error('Erro ao buscar dados do anuário:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao buscar as páginas.' });
   }
 });
