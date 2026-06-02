@@ -5,6 +5,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import cors from 'cors'; 
 import { Buffer } from 'buffer';
 import process from 'process';
+const { ObjectId } = require('mongodb');
 
 // INICIALIZA O DOTENV (Lê o arquivo .env se você estiver rodando no seu computador)
 import dotenv from 'dotenv';
@@ -147,5 +148,29 @@ app.post('/api/anuario/nova-pagina', async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar nova página:', error);
     res.status(500).json({ success: false, message: 'Erro ao criar página.' });
+  }
+});
+
+// O topo do seu arquivo precisa ter o ObjectId importado do mongodb, caso já não tenha:
+const { ObjectId } = require('mongodb');
+
+// ROTA PARA SALVAR/ATUALIZAR UMA PÁGINA
+app.put('/api/anuario/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { elementos } = req.body; // Pega as fotos e coordenadas que o Admin enviou
+
+    const colecao = db.collection('paginas');
+    
+    // Atualiza apenas os elementos da página específica
+    await colecao.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { elementos: elementos } }
+    );
+
+    res.json({ success: true, message: 'Página atualizada com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao salvar página:', error);
+    res.status(500).json({ success: false, message: 'Erro ao salvar página.' });
   }
 });

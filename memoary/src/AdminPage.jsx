@@ -73,8 +73,32 @@ export default function AdminPage() {
     setPages(prev => prev.map(p => p._id === paginaAtiva._id ? paginaAtualizada : p));
   };
 
-  if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>Carregando Editor...</div>;
+  
 
+  if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>Carregando Editor...</div>;
+  const salvarPagina = async () => {
+    if (!paginaAtiva) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/anuario/${paginaAtiva._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ elementos: paginaAtiva.elementos }) // Envia as fotos e posições
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        alert("Página salva no banco de dados com sucesso! 🎉");
+      } else {
+        alert("Erro ao salvar no servidor.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      alert("Erro de conexão ao salvar a página.");
+    }
+  };
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif', backgroundColor: '#f0f2f5' }}>
       
@@ -113,7 +137,8 @@ export default function AdminPage() {
           ))}
         </div>
       </div>
-
+          
+   
       {/* ÁREA PRINCIPAL: O Editor Estilo Canva */}
       <div style={{ flex: 1, padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
         {paginaAtiva ? (
@@ -122,7 +147,7 @@ export default function AdminPage() {
               <button onClick={adicionarFotoNaPagina} style={{ padding: '10px 15px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                 🖼️ Inserir Foto nesta Página
               </button>
-              <button onClick={() => alert('Salvando alterações...')} style={{ padding: '10px 15px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              <button onClick={salvarPagina} style={{ padding: '10px 15px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                 💾 Salvar Alterações no Livro
               </button>
             </div>
