@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
-  : 'https://memoary.onrender.comm'
+  : 'https://memoary.onrender.com'
 export default function AdminPage() {
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
