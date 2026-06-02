@@ -110,6 +110,7 @@ function BookViewer({ onLoginClick, pages }) {
   const rotateLeft = useTransform(dragX, [0, 300], [-180, 0]);
   const zLeft = useTransform(dragX, [0, 150, 300], [0.5, 10, 0.5]);
 
+  // Função para arrastar com o mouse (Mantida e funcionando)
   const handleDragEnd = (e, info) => {
     if (!bookIsOpen || pages.length === 0) return;
 
@@ -125,6 +126,25 @@ function BookViewer({ onLoginClick, pages }) {
       });
     } else {
       animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
+    }
+  };
+
+  // Funções extras para os botões de clique
+  const virarDireita = () => {
+    if (currentPage < pages.length - 1) {
+      animate(dragX, -300, { duration: 0.4, ease: "easeInOut" }).then(() => {
+        setCurrentPage(prev => prev + 1);
+        dragX.set(0);
+      });
+    }
+  };
+
+  const virarEsquerda = () => {
+    if (currentPage > 0) {
+      animate(dragX, 300, { duration: 0.4, ease: "easeInOut" }).then(() => {
+        setCurrentPage(prev => prev - 1);
+        dragX.set(0);
+      });
     }
   };
 
@@ -225,10 +245,11 @@ function BookViewer({ onLoginClick, pages }) {
                 </div>
               )}
 
+              {/* CORREÇÃO: Variáveis das páginas flutuantes ao voltar */}
               {currentPage > 0 && (
                 <motion.div className="flippable-page-container" style={{ rotateY: rotateLeft, z: zLeft }}>
                   <div className="page-face page-front">
-                    <RenderAdminContent page={pages[currentPage - 1]} />
+                    <RenderAdminContent page={pages[currentPage]} />
                   </div>
                   <div className="page-face page-back">
                     <RenderAdminContent page={pages[currentPage - 1]} />
@@ -236,13 +257,14 @@ function BookViewer({ onLoginClick, pages }) {
                 </motion.div>
               )}
 
-              {currentPage < pages.length && (
+              {/* CORREÇÃO: Variáveis das páginas flutuantes ao avançar */}
+              {currentPage < pages.length - 1 && (
                 <motion.div className="flippable-page-container" style={{ rotateY: rotateRight, z: zRight }}>
                   <div className="page-face page-front">
                     <RenderAdminContent page={pages[currentPage]} />
                   </div>
                   <div className="page-face page-back">
-                    <RenderAdminContent page={pages[currentPage]} />
+                    <RenderAdminContent page={pages[currentPage + 1]} />
                   </div>
                 </motion.div>
               )}
@@ -258,6 +280,24 @@ function BookViewer({ onLoginClick, pages }) {
               onDragEnd={handleDragEnd}
             />
           )}
+
+          {/* Botões extras de navegação (aparecem embaixo do livro) */}
+          {bookIsOpen && pages.length > 1 && (
+            <div style={{ position: 'absolute', top: '105%', left: '50%', transform: 'translate(-50%, 0)', display: 'flex', gap: '20px', zIndex: 100 }}>
+              <button 
+                onClick={virarEsquerda} 
+                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage > 0 ? 1 : 0.5, pointerEvents: currentPage > 0 ? 'auto' : 'none' }}
+              >
+                ← Voltar
+              </button>
+              <button 
+                onClick={virarDireita} 
+                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage < pages.length - 1 ? 1 : 0.5, pointerEvents: currentPage < pages.length - 1 ? 'auto' : 'none' }}
+              >
+                Avançar →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -271,11 +311,10 @@ function RenderAdminContent({ page }) {
   if (!page) return null;
   
   return (
-    // Transformamos a folha do livro em uma tela relativa para os elementos flutuarem em cima
-    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+    // CORREÇÃO: O position absolute garante que a tela ignore o padding e use os 440x700px integrais
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
       {page.elementos?.map((element, index) => {
         
-        // Renderiza o novo Modo Canva (fotos com x, y, largura e altura)
         if (element.tipo === "imagem" && element.x !== undefined) {
           return (
             <div
@@ -298,7 +337,6 @@ function RenderAdminContent({ page }) {
           );
         }
 
-        // Fallback: se encontrar alguma foto antiga no banco de dados sem as coordenadas Canva
         if (element.tipo === "imagem") {
           return (
             <div key={index} style={{ padding: '20px', textAlign: 'center' }}>

@@ -169,3 +169,18 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
+
+app.delete('/api/anuario/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const colecao = db.collection('paginas');
+    
+    // Deleta do MongoDB usando o ID
+    await colecao.deleteOne({ _id: new ObjectId(id) });
+    
+    res.json({ success: true, message: 'Página deletada com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao deletar página:', error);
+    res.status(500).json({ success: false, message: 'Erro ao deletar página.' });
+  }
+});

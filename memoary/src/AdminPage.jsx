@@ -42,11 +42,23 @@ export default function AdminPage() {
     }
   };
 
-  const handleExcluirPagina = async (id) => {
-    if (!window.confirm("Deseja deletar esta página do anuário?")) return;
-    // Aqui adicionaremos a rota DELETE em breve para sumir do banco
-    setPages(prev => prev.filter(p => p._id !== id));
-    if (paginaAtiva?._id === id) setPaginaAtiva(null);
+const handleExcluirPagina = async (id) => {
+    if (!window.confirm("Deseja realmente deletar esta página do anuário?")) return;
+    
+    try {
+      // Chama a nova rota DELETE no servidor
+      const response = await fetch(`${API_URL}/api/anuario/${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Remove da tela se o servidor confirmar a exclusão
+        setPages(prev => prev.filter(p => p._id !== id));
+        if (paginaAtiva?._id === id) setPaginaAtiva(null);
+      }
+    } catch (error) {
+      console.error("Erro ao deletar:", error);
+      alert("Erro ao tentar deletar a página.");
+    }
   };
 
   // Simula a adição de uma foto na página atual com posições iniciais (Modo Canva)
@@ -103,7 +115,15 @@ export default function AdminPage() {
     <div style={{ display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif', backgroundColor: '#f0f2f5' }}>
       
       {/* BARRA LATERAL: Lista de Páginas do Livro */}
-      <div style={{ width: '300px', backgroundColor: '#fff', borderRight: '1px solid #e0e0e0', padding: '20px', overflowY: 'auto' }}>
+      <div style={{
+              width: '440px',  /* ← EXATAMENTE O TAMANHO DO APP.CSS */
+              height: '700px', /* ← EXATAMENTE O TAMANHO DO APP.CSS */
+              backgroundColor: '#fff', 
+              boxShadow: '0 10px 25px rgba(0,0,0,0.15)', 
+              borderRadius: '4px',
+              position: 'relative', 
+              border: '1px solid #ccc',
+              overflow: 'hidden'}}>
         <h2 style={{ fontSize: '20px', marginBottom: '5px', color: '#333' }}>Páginas do Anuário</h2>
         <p style={{ fontSize: '12px', color: '#777', marginBottom: '20px' }}>Clique em uma página para editá-la.</p>
         
