@@ -11,7 +11,7 @@ import anuarioCapa from './assets/anuario.svg';
 import LoginPage from './LoginPage';
 import AdminPage from './AdminPage';
 
-// REGISTRA O CONFIGURAÇÃO DO ENDEREÇO DO RENDER
+// REGISTRA A CONFIGURAÇÃO DO ENDEREÇO DO RENDER
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
   : 'https://memoary.onrender.com';
@@ -264,35 +264,50 @@ function BookViewer({ onLoginClick, pages }) {
   );
 }
 
+// ==========================================
+// 3. A MÁGICA DO MODO CANVA ACONTECE AQUI
+// ==========================================
 function RenderAdminContent({ page }) {
   if (!page) return null;
   
-  if (page.tipoLayout === "full") {
-    const imgElement = page.elementos.find(el => el.tipo === "imagem");
-    return (
-      <div className="layout-full-container">
-        <img src={imgElement?.url} alt="Página Inteira" className="full-page-image" />
-      </div>
-    );
-  }
-
   return (
-    <div className="layout-grid-container">
-      {page.elementos.map((element, index) => {
-        if (element.tipo === "titulo") {
-          return <h2 key={index} className={`admin-title ${element.estilo}`}>{element.texto}</h2>;
-        }
-        if (element.tipo === "imagem") {
+    // Transformamos a folha do livro em uma tela relativa para os elementos flutuarem em cima
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+      {page.elementos?.map((element, index) => {
+        
+        // Renderiza o novo Modo Canva (fotos com x, y, largura e altura)
+        if (element.tipo === "imagem" && element.x !== undefined) {
           return (
-            <div key={index} className="admin-img-box">
-              <img src={element.url} alt="Foto" className="admin-custom-img" />
-              {element.legenda && <p className="admin-caption">{element.legenda}</p>}
+            <div
+              key={element.id || index}
+              style={{
+                position: 'absolute',
+                left: `${element.x}px`,
+                top: `${element.y}px`,
+                width: `${element.largura}px`,
+                height: `${element.altura}px`,
+                overflow: 'hidden'
+              }}
+            >
+              <img 
+                src={element.url} 
+                alt="Foto do anuário" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
             </div>
           );
         }
-        if (element.tipo === "texto") {
-          return <p key={index} className="admin-paragraph">{element.texto}</p>;
+
+        // Fallback: se encontrar alguma foto antiga no banco de dados sem as coordenadas Canva
+        if (element.tipo === "imagem") {
+          return (
+            <div key={index} style={{ padding: '20px', textAlign: 'center' }}>
+              <img src={element.url} alt="Foto" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+              {element.legenda && <p style={{ marginTop: '10px', color: '#555' }}>{element.legenda}</p>}
+            </div>
+          );
         }
+
         return null;
       })}
     </div>
