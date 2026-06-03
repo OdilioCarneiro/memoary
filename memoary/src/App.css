@@ -189,20 +189,3 @@ body, html, #root {
   .drag-overlay { left: 0; width: 100%; }
 }
 
-/* Ajustes para o framework Page-Flip */
-.stPageFlip {
-  position: relative;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-  background: transparent;
-}
-
-.my-page {
-  background-color: white;
-  overflow: hidden;
-  position: relative;
-}
-
-/* Opcional: Efeito na capa dura */
-.my-page[data-density="hard"] {
-  box-shadow: inset -5px 0 10px rgba(0,0,0,0.1);
-}
