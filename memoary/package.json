@@ -14,7 +14,8 @@
     "framer-motion": "^12.40.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-pageflip": "^2.0.3"
+    "react-pageflip": "^2.0.3",
+    "react-rnd": "^10.5.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
