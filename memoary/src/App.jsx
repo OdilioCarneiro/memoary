@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { PageFlip } from 'page-flip'; // 🚀 O novo framework especialista em livros 3D
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -94,88 +94,72 @@ export default function App() {
 }
 
 // ==========================================
-// 2. O COMPONENTE DO LIVRO 3D
+// 2. O COMPONENTE DO LIVRO 3D (COM PAGE-FLIP)
 // ==========================================
 function BookViewer({ onLoginClick, pages }) {
   const containerRef = useRef(null);
-  const bookRef = useRef(null);
-  const coverRef = useRef(null);
+  const bookContainerRef = useRef(null);
+  const pageFlipRef = useRef(null);
   
-  const [currentPage, setCurrentPage] = useState(0);
   const [bookIsOpen, setBookIsOpen] = useState(false);
 
-  const dragX = useMotionValue(0);
-  const rotateRight = useTransform(dragX, [0, -300], [0, -180]);
-  const zRight = useTransform(dragX, [0, -150, -300], [0.5, 10, 0.5]);
-  const rotateLeft = useTransform(dragX, [0, 300], [-180, 0]);
-  const zLeft = useTransform(dragX, [0, 150, 300], [0.5, 10, 0.5]);
+  // Inicializa o framework de folhear páginas super realista
+  useEffect(() => {
+    // Só inicia se a animação do GSAP já permitiu a abertura e se há contêiner
+    if (!bookIsOpen || !bookContainerRef.current) return;
 
-  // Função para arrastar com o mouse (Mantida e funcionando)
-  const handleDragEnd = (e, info) => {
-    if (!bookIsOpen || pages.length === 0) return;
-
-    if (info.offset.x < -50 && currentPage < pages.length - 1) {
-      animate(dragX, -300, { duration: 0.4, ease: "easeInOut" }).then(() => {
-        setCurrentPage(prev => prev + 1);
-        dragX.set(0);
-      });
-    } else if (info.offset.x > 50 && currentPage > 0) {
-      animate(dragX, 300, { duration: 0.4, ease: "easeInOut" }).then(() => {
-        setCurrentPage(prev => prev - 1);
-        dragX.set(0);
-      });
-    } else {
-      animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
+    // Se já existir uma instância rodando (por causa do React StrictMode), destrói primeiro
+    if (pageFlipRef.current) {
+      pageFlipRef.current.destroy();
     }
-  };
 
-  // Funções extras para os botões de clique
-  const virarDireita = () => {
-    if (currentPage < pages.length - 1) {
-      animate(dragX, -300, { duration: 0.4, ease: "easeInOut" }).then(() => {
-        setCurrentPage(prev => prev + 1);
-        dragX.set(0);
-      });
-    }
-  };
-
-  const virarEsquerda = () => {
-    if (currentPage > 0) {
-      animate(dragX, 300, { duration: 0.4, ease: "easeInOut" }).then(() => {
-        setCurrentPage(prev => prev - 1);
-        dragX.set(0);
-      });
-    }
-  };
-
-  useGSAP(() => {
-    gsap.set(bookRef.current, {
-      xPercent: -50,
-      yPercent: -50,
-      rotationY: -25,
-      rotationZ: -8,
-      scale: 0.85,
-      left: "75%",
-      top: "50%"
+    // Configurações do livro 3D
+    const flip = new PageFlip(bookContainerRef.current, {
+      width: 440,          // Mantém as dimensões exatas do seu modo Canva
+      height: 700,
+      size: 'fixed',
+      minWidth: 320,
+      minHeight: 480,
+      maxWidth: 440,
+      maxHeight: 700,
+      drawShadow: true,    // A mágica: sombras realistas na curva da página
+      showCover: true,     // Permite capas rígidas
+      flippingTime: 800,   // Velocidade da física ao soltar a página
+      usePortrait: false,  // Força exibição dupla (lado a lado)
+      maxShadowOpacity: 0.4,
     });
 
+    const pagesElements = document.querySelectorAll('.my-page');
+    if (pagesElements.length > 0) {
+      flip.loadFromHTML(pagesElements);
+      pageFlipRef.current = flip;
+    }
+
+    return () => {
+      if (pageFlipRef.current) pageFlipRef.current.destroy();
+    };
+  }, [bookIsOpen, pages]);
+
+  // Animação de entrada via Scroll (GSAP mantido)
+  useGSAP(() => {
     gsap.set(".fixed-header", { opacity: 0, y: -20 });
+    // Esconde o contêiner do livro no início
+    gsap.set(".book-wrapper-gsap", { opacity: 0, scale: 0.8, xPercent: -50, left: "75%" });
 
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: ".viewport-hero",
         start: "top top",
-        end: "+=2500", 
+        end: "+=2000", 
         scrub: 1,      
         pin: true,     
-        onUpdate: (self) => { setBookIsOpen(self.progress > 0.6); }
+        onUpdate: (self) => { setBookIsOpen(self.progress > 0.5); }
       }
     });
 
     tl.to(".left-hero-panel", { opacity: 0, x: -50, duration: 1, ease: "power2.out" }, 0);
     tl.to(".fixed-header", { opacity: 1, y: 0, pointerEvents: "auto", duration: 1, ease: "power2.out" }, 0.1); 
-    tl.to(bookRef.current, { left: "50%", xPercent: -50, yPercent: -50, rotationY: 0, rotationZ: 0, scale: 1, duration: 1.2, ease: "power2.inOut" }, 0); 
-    tl.to(coverRef.current, { rotationY: -180, duration: 1.5, ease: "power2.inOut" }, "+=0.2");
+    tl.to(".book-wrapper-gsap", { left: "50%", opacity: 1, scale: 1, duration: 1.2, ease: "power2.inOut" }, 0); 
 
   }, { scope: containerRef });
 
@@ -201,103 +185,57 @@ function BookViewer({ onLoginClick, pages }) {
           </div>
         </div>
 
-        <div ref={bookRef} className="book-3d-container">
-          <div ref={coverRef} className="book-cover-3d" style={{ transform: 'translateZ(2px)' }}>
-            <div className="cover-side-front">
-              <img src={anuarioCapa} alt="Capa" className="capa-img-render" />
+        {/* Esse div serve apenas para o GSAP mover o livro do lado direito pro centro */}
+        <div className="book-wrapper-gsap" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+          
+          {/* Aqui começa o livro realista */}
+          <div 
+            ref={bookContainerRef} 
+            className="stPageFlip" 
+            style={{ display: bookIsOpen ? 'block' : 'none' }} // Só renderiza quando o scroll chegar na metade
+          >
+            
+            {/* 1. Capa do Anuário (Capa Rígida) */}
+            <div className="my-page" data-density="hard">
+              <img src={anuarioCapa} alt="Capa" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <div className="cover-side-back">
-              <div className="inside-cover-blend">
-                <img src={logoSvg} alt="Logo" className="watermark-logo" />
+
+            {/* 2. Verso da Capa (Capa Rígida Interna) */}
+            <div className="my-page" data-density="hard" style={{ backgroundColor: '#faf8f5' }}>
+              <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={logoSvg} alt="Logo Watermark" style={{ width: '150px', opacity: 0.1 }} />
               </div>
             </div>
-          </div>
 
-          <div className="static-page right-side" style={{ transform: 'translateZ(-2px)' }}>
-            <div className="page-face page-front" style={{ background: '#e3dfd3' }}>
-               <div className="inside-cover-blend">
-                  <p style={{ color: '#8b8984' }}>Fim do Anuário</p>
-               </div>
-            </div>
-          </div>
+            {/* 3. Páginas Dinâmicas do Banco de Dados (Modo Canva) */}
+            {pages.length === 0 ? (
+              // Fallback caso não tenha páginas
+              <div className="my-page" style={{ backgroundColor: '#fff' }}>
+                <div style={{ padding: '20px', textAlign: 'center', marginTop: '50%' }}>
+                  <p style={{ color: '#8b8984' }}>Nenhuma página adicionada ainda.</p>
+                </div>
+              </div>
+            ) : (
+              pages.map((page, index) => (
+                <div className="my-page" key={page._id || index} style={{ backgroundColor: '#fff' }}>
+                  <RenderAdminContent page={page} />
+                </div>
+              ))
+            )}
 
-          {pages.length === 0 ? (
-            <div className="static-page right-side">
-              <div className="page-face page-front" style={{ padding: '20px', textAlign: 'center' }}>
-                <p style={{ color: '#8b8984', marginTop: '40%' }}>Nenhuma página adicionada ainda.</p>
+            {/* 4. Verso da Contracapa (Página Rígida) */}
+            <div className="my-page" data-density="hard" style={{ backgroundColor: '#e3dfd3' }}>
+              <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                <p style={{ color: '#8b8984', fontWeight: 'bold' }}>Fim do Anuário</p>
               </div>
             </div>
-          ) : (
-            <>
-              {currentPage > 1 && (
-                <div className="static-page left-side" style={{ transform: 'rotateY(-180deg) translateZ(0px)' }}>
-                  <div className="page-face page-back">
-                    <RenderAdminContent page={pages[currentPage - 2]} />
-                  </div>
-                </div>
-              )}
 
-              {currentPage < pages.length - 1 && (
-                <div className="static-page right-side" style={{ transform: 'translateZ(0px)' }}>
-                  <div className="page-face page-front">
-                    <RenderAdminContent page={pages[currentPage + 1]} />
-                  </div>
-                </div>
-              )}
-
-              {/* CORREÇÃO: Variáveis das páginas flutuantes ao voltar */}
-              {currentPage > 0 && (
-                <motion.div className="flippable-page-container" style={{ rotateY: rotateLeft, z: zLeft }}>
-                  <div className="page-face page-front">
-                    <RenderAdminContent page={pages[currentPage]} />
-                  </div>
-                  <div className="page-face page-back">
-                    <RenderAdminContent page={pages[currentPage - 1]} />
-                  </div>
-                </motion.div>
-              )}
-
-              {/* CORREÇÃO: Variáveis das páginas flutuantes ao avançar */}
-              {currentPage < pages.length - 1 && (
-                <motion.div className="flippable-page-container" style={{ rotateY: rotateRight, z: zRight }}>
-                  <div className="page-face page-front">
-                    <RenderAdminContent page={pages[currentPage]} />
-                  </div>
-                  <div className="page-face page-back">
-                    <RenderAdminContent page={pages[currentPage + 1]} />
-                  </div>
-                </motion.div>
-              )}
-            </>
-          )}
-
-          {bookIsOpen && pages.length > 0 && (
-            <motion.div
-              className="drag-overlay"
-              drag="x"
-              style={{ x: dragX }}
-              dragConstraints={{ left: 0, right: 0 }}
-              onDragEnd={handleDragEnd}
-            />
-          )}
-
-          {/* Botões extras de navegação (aparecem embaixo do livro) */}
-          {bookIsOpen && pages.length > 1 && (
-            <div style={{ position: 'absolute', top: '105%', left: '50%', transform: 'translate(-50%, 0)', display: 'flex', gap: '20px', zIndex: 100 }}>
-              <button 
-                onClick={virarEsquerda} 
-                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage > 0 ? 1 : 0.5, pointerEvents: currentPage > 0 ? 'auto' : 'none' }}
-              >
-                ← Voltar
-              </button>
-              <button 
-                onClick={virarDireita} 
-                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage < pages.length - 1 ? 1 : 0.5, pointerEvents: currentPage < pages.length - 1 ? 'auto' : 'none' }}
-              >
-                Avançar →
-              </button>
+            {/* 5. Contracapa Traseira (Fechando o Livro) */}
+            <div className="my-page" data-density="hard" style={{ backgroundColor: '#2b2a29' }}>
+               {/* Fundo escuro como encadernamento traseiro */}
             </div>
-          )}
+
+          </div>
         </div>
       </div>
     </div>
@@ -311,7 +249,6 @@ function RenderAdminContent({ page }) {
   if (!page) return null;
   
   return (
-    // CORREÇÃO: O position absolute garante que a tela ignore o padding e use os 440x700px integrais
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
       {page.elementos?.map((element, index) => {
         
