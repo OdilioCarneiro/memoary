@@ -1,308 +1,536 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Rnd } from 'react-rnd';
-
-// Crie esta função FORA do componente React para evitar o erro de impureza
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
   : 'https://memoary.onrender.com';
-  
-  const gerarIdUnico = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID(); // Padrão moderno e seguro
-  }
-  return Date.now().toString(36) + Math.random().toString(36).substring(2); // Fallback
-};
+
+const gerarId = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+/* =====================================================
+   CONSTANTES DE LAYOUT
+   ===================================================== */
+const CANVAS_W = 420;
+const CANVAS_H = 660;
+
+/* =====================================================
+   ADMIN PAGE
+   ===================================================== */
 export default function AdminPage() {
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [paginaAtiva, setPaginaAtiva] = useState(null); 
-  const [elementoSelecionado, setElementoSelecionado] = useState(null); // Guarda o ID da foto clicada
+  const [isSaving, setIsSaving] = useState(false);
+  const [activePage, setActivePage] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [toast, setToast] = useState(null); // { msg, type: 'success'|'error' }
 
-  // ==========================================
-  // 1. LÓGICA DE BANCO DE DADOS (MANTIDA DO SEU CÓDIGO)
-  // ==========================================
+  /* ---------- toast helper ---------- */
+  const showToast = useCallback((msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  /* ---------- carregar páginas ---------- */
   useEffect(() => {
-    async function carregarPaginas() {
+    async function load() {
       try {
-        const response = await fetch(`${API_URL}/api/anuario`);
-        const data = await response.json();
-        if (data.success) {
-          setPages(data.data);
-        }
-      } catch (error) {
-        console.error("Erro detalhado ao carregar páginas:", error);
+        const res = await fetch(`${API_URL}/api/anuario`);
+        const json = await res.json();
+        if (json.success) setPages(json.data);
+      } catch (e) {
+        console.error('Erro ao carregar:', e);
+        showToast('Erro ao carregar páginas', 'error');
       } finally {
         setIsLoading(false);
       }
     }
-    carregarPaginas();
-  }, []);
+    load();
+  }, [showToast]);
 
+  /* ---------- nova página ---------- */
   const handleNovaPagina = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
-      const data = await response.json();
-      if (data.success) {
-        setPages(prev => [...prev, data.data]);
-        setPaginaAtiva(data.data);
-        setElementoSelecionado(null);
+      const res = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        setPages(p => [...p, json.data]);
+        setActivePage(json.data);
+        setSelectedId(null);
+        showToast('Página criada!');
       }
-    } catch (error) {
-      console.error("Erro ao criar nova página:", error);
-      alert("Erro ao criar nova página.");
+    } catch (e) {
+      showToast('Erro ao criar página', 'error',{e});
     }
   };
 
+  /* ---------- excluir página ---------- */
   const handleExcluirPagina = async (id) => {
-    if (!window.confirm("Deseja realmente deletar esta página do anuário?")) return;
+    if (!window.confirm('Deletar esta página permanentemente?')) return;
     try {
-      const response = await fetch(`${API_URL}/api/anuario/${id}`, { method: 'DELETE' });
-      const data = await response.json();
-      if (data.success) {
-        setPages(prev => prev.filter(p => p._id !== id));
-        if (paginaAtiva?._id === id) {
-          setPaginaAtiva(null);
-          setElementoSelecionado(null);
-        }
+      const res = await fetch(`${API_URL}/api/anuario/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        setPages(p => p.filter(x => x._id !== id));
+        if (activePage?._id === id) { setActivePage(null); setSelectedId(null); }
+        showToast('Página excluída');
       }
-    } catch (error) {
-      console.error("Erro ao deletar:", error);
-      alert("Erro ao tentar deletar a página.");
+    } catch (e) {
+      showToast('Erro ao excluir', 'error' ,{e});
     }
   };
 
+  /* ---------- salvar página ---------- */
   const salvarPagina = async () => {
-    if (!paginaAtiva) return;
+    if (!activePage || isSaving) return;
+    setIsSaving(true);
     try {
-      const response = await fetch(`${API_URL}/api/anuario/${paginaAtiva._id}`, {
+      const res = await fetch(`${API_URL}/api/anuario/${activePage._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ elementos: paginaAtiva.elementos })
+        body: JSON.stringify({ elementos: activePage.elementos }),
       });
-      const data = await response.json();
-      if (data.success) {
-        alert("Página salva no banco de dados com sucesso! 🎉");
-      } else {
-        alert("Erro ao salvar no servidor.");
-      }
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro de conexão ao salvar a página.");
+      const json = await res.json();
+      if (json.success) showToast('Página salva com sucesso! 🎉');
+      else showToast('Erro ao salvar no servidor', 'error');
+    } catch (e) {
+      showToast('Erro de conexão', 'error',{e});
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // ==========================================
-  // 2. LÓGICA DO MODO CANVA (ARRASTAR, SOLTAR E EDITAR)
-  // ==========================================
-  
-  // Adiciona um quadrado vazio no palco
-  const adicionarFotoNaPagina = () => {
-    const novoElemento = {
-      id: gerarIdUnico(),
-      tipo: 'imagem',
-      url: 'https://via.placeholder.com/200x150?text=Cole+uma+URL+ao+lado', // Placeholder
-      x: 100,  
-      y: 100,  
-      largura: 200, 
-      altura: 150,
-      legenda: '' 
+  /* ---------- helpers de estado local ---------- */
+  const updateActiveLocal = useCallback((newElements) => {
+    const updated = { ...activePage, elementos: newElements };
+    setActivePage(updated);
+    setPages(p => p.map(x => x._id === updated._id ? updated : x));
+  }, [activePage]);
+
+  const addPhoto = () => {
+    const el = {
+      id: gerarId(), tipo: 'imagem',
+      url: '', x: 60, y: 60,
+      largura: 280, altura: 200, legenda: ''
     };
-
-    atualizarPaginaAtivaLocal([...(paginaAtiva.elementos || []), novoElemento]);
-    setElementoSelecionado(novoElemento.id);
+    updateActiveLocal([...(activePage.elementos || []), el]);
+    setSelectedId(el.id);
   };
 
-  // Atualiza propriedades específicas (x, y, largura, legenda) de um elemento
-  const atualizarElemento = (id, novosDados) => {
-    const elementosAtualizados = paginaAtiva.elementos.map(el => 
-      el.id === id ? { ...el, ...novosDados } : el
-    );
-    atualizarPaginaAtivaLocal(elementosAtualizados);
+  const updateEl = (id, data) => {
+    updateActiveLocal(activePage.elementos.map(e => e.id === id ? { ...e, ...data } : e));
   };
 
-  // Remove uma foto específica
-  const removerElemento = (id) => {
-    const elementosAtualizados = paginaAtiva.elementos.filter(el => el.id !== id);
-    atualizarPaginaAtivaLocal(elementosAtualizados);
-    setElementoSelecionado(null);
+  const removeEl = (id) => {
+    updateActiveLocal(activePage.elementos.filter(e => e.id !== id));
+    setSelectedId(null);
   };
 
-  // Sincroniza a edição da página ativa com a lista geral de páginas no estado do React
-  const atualizarPaginaAtivaLocal = (novosElementos) => {
-    const paginaAtualizada = { ...paginaAtiva, elementos: novosElementos };
-    setPaginaAtiva(paginaAtualizada);
-    setPages(prev => prev.map(p => p._id === paginaAtiva._id ? paginaAtualizada : p));
-  };
+  const selectedEl = activePage?.elementos?.find(e => e.id === selectedId) || null;
 
-
-  if (isLoading) return <div style={{ padding: '50px', textAlign: 'center' }}>Carregando Editor...</div>;
-
-  return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 75px)', fontFamily: 'Arial, sans-serif', backgroundColor: 'var(--cor-fundo)' }}>
-      
-      {/* 1. BARRA LATERAL ESQUERDA: LISTA DE PÁGINAS */}
-      <div style={{ width: '300px', backgroundColor: '#fff', borderRight: '1px solid #ccc', padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ fontSize: '18px', color: 'var(--cor-texto)', marginBottom: '5px' }}>Anuário</h2>
-        <p style={{ fontSize: '12px', color: '#8b8984', marginBottom: '20px' }}>Selecione uma página</p>
-        
-        <button onClick={handleNovaPagina} style={{ padding: '12px', backgroundColor: '#d4af37', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}>
-          + Adicionar Página
-        </button>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {pages.map((page, index) => (
-            <div 
-              key={page._id} 
-              onClick={() => { setPaginaAtiva(page); setElementoSelecionado(null); }}
-              style={{ 
-                padding: '15px', 
-                backgroundColor: paginaAtiva?._id === page._id ? '#f5ebd0' : '#f9f9f9', 
-                border: paginaAtiva?._id === page._id ? '2px solid #d4af37' : '1px solid #ddd',
-                borderRadius: '8px', cursor: 'pointer', position: 'relative'
-              }}
-            >
-              <span style={{ fontWeight: 'bold', color: 'var(--cor-texto)' }}>Página {index + 1}</span>
-              <span style={{ fontSize: '12px', color: '#8b8984', display: 'block' }}>{page.elementos?.length || 0} fotos</span>
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleExcluirPagina(page._id); }} 
-                style={{ position: 'absolute', right: '10px', top: '12px', background: 'none', border: 'none', color: '#c62828', cursor: 'pointer' }}
-              >
-                🗑️
-              </button>
-            </div>
-          ))}
+  /* =====================================================
+     RENDER
+     ===================================================== */
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 75px)', fontFamily: 'Teachers, sans-serif' }}>
+        <div style={{ textAlign: 'center', color: '#8b8984' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>📖</div>
+          <p>Carregando editor...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* 2. ÁREA CENTRAL: O PALCO (EXATOS 440X700PX) */}
-      <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#e3dfd3', overflow: 'auto' }}>
-        {paginaAtiva ? (
+  return (
+    <div style={{ display: 'flex', height: 'calc(100vh - 75px)', fontFamily: "'Teachers', sans-serif", background: 'var(--cor-fundo)', position: 'relative' }}>
+
+      {/* ===== TOAST ===== */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+          background: toast.type === 'error' ? '#c62828' : '#2e7d32',
+          color: '#fff', padding: '12px 28px', borderRadius: 30, zIndex: 9999,
+          fontWeight: 600, fontSize: 14, boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
+          animation: 'slideDown 0.3s ease',
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ===== SIDEBAR ESQUERDA: LISTA DE PÁGINAS ===== */}
+      <aside style={{
+        width: 260, background: '#fff', borderRight: '1px solid #ede9e0',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #ede9e0' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--cor-texto)', marginBottom: 4 }}>Páginas do Anuário</h2>
+          <p style={{ fontSize: 12, color: '#9b9790' }}>{pages.length} {pages.length === 1 ? 'página' : 'páginas'}</p>
+        </div>
+
+        <div style={{ padding: '16px 16px 8px' }}>
+          <button onClick={handleNovaPagina}
+            style={{
+              width: '100%', padding: '11px', background: 'var(--cor-destaque)',
+              color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700,
+              cursor: 'pointer', fontSize: 14, fontFamily: 'inherit',
+              transition: 'all 0.2s', letterSpacing: '0.02em',
+            }}
+            onMouseEnter={e => e.target.style.background = '#a88a45'}
+            onMouseLeave={e => e.target.style.background = 'var(--cor-destaque)'}
+          >
+            + Nova Página
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {pages.length === 0 && (
+            <p style={{ textAlign: 'center', color: '#c0bbb4', fontSize: 13, marginTop: 40 }}>Nenhuma página ainda</p>
+          )}
+          {pages.map((page, idx) => {
+            const isActive = activePage?._id === page._id;
+            return (
+              <div key={page._id}
+                onClick={() => { setActivePage(page); setSelectedId(null); }}
+                style={{
+                  padding: '13px 14px', background: isActive ? '#fdf5e4' : '#f9f8f5',
+                  border: `1.5px solid ${isActive ? 'var(--cor-destaque)' : '#ede9e0'}`,
+                  borderRadius: 8, cursor: 'pointer', position: 'relative',
+                  transition: 'all 0.18s',
+                }}
+              >
+                {/* Miniatura da página */}
+                <div style={{
+                  width: '100%', height: 80, background: '#f0ece0',
+                  borderRadius: 4, marginBottom: 10, overflow: 'hidden',
+                  position: 'relative', border: '1px solid #e5e0d5',
+                }}>
+                  {page.elementos?.filter(e => e.tipo === 'imagem' && e.url).slice(0, 4).map(el => (
+                    <img key={el.id} src={el.url} alt=""
+                      style={{
+                        position: 'absolute',
+                        left: `${(el.x / CANVAS_W) * 100}%`,
+                        top: `${(el.y / CANVAS_H) * 100}%`,
+                        width: `${(el.largura / CANVAS_W) * 100}%`,
+                        height: `${(el.altura / CANVAS_H) * 100}%`,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ))}
+                  {(!page.elementos || page.elementos.length === 0) && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#c0bbb4', fontSize: 22 }}>
+                      +
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--cor-texto)' }}>Página {idx + 1}</span>
+                    <span style={{ display: 'block', fontSize: 11, color: '#9b9790', marginTop: 1 }}>
+                      {page.elementos?.length || 0} foto{page.elementos?.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); handleExcluirPagina(page._id); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#c62828', opacity: 0.6, padding: 4, borderRadius: 4 }}
+                    title="Excluir página"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+
+      {/* ===== CANVAS CENTRAL ===== */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#e8e4da', overflow: 'auto' }}>
+        {activePage ? (
           <>
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-              <button onClick={adicionarFotoNaPagina} style={{ padding: '10px 20px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+            {/* Toolbar */}
+            <div style={{
+              width: '100%', padding: '14px 24px', background: '#fff',
+              borderBottom: '1px solid #ede9e0', display: 'flex', gap: 10, alignItems: 'center',
+              position: 'sticky', top: 0, zIndex: 10,
+            }}>
+              <button onClick={addPhoto}
+                style={toolbarBtn('#322A18', '#fff')}>
                 🖼️ Adicionar Foto
               </button>
-              <button onClick={salvarPagina} style={{ padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                💾 Salvar Página
+              <div style={{ flex: 1 }} />
+              <span style={{ fontSize: 12, color: '#9b9790' }}>
+                {activePage.elementos?.length || 0} elemento{activePage.elementos?.length !== 1 ? 's' : ''}
+              </span>
+              <button onClick={salvarPagina} disabled={isSaving}
+                style={toolbarBtn('#2e7d32', '#fff', isSaving)}>
+                {isSaving ? 'Salvando...' : '💾 Salvar'}
               </button>
             </div>
 
-            {/* A "Folha" do Livro (Tela de pintura) */}
-            <div 
-              style={{ 
-                width: '440px', 
-                height: '700px', 
-                backgroundColor: '#fff', 
-                boxShadow: '0 15px 35px rgba(0,0,0,0.2)', 
-                position: 'relative', 
-                overflow: 'hidden' 
-              }}
-              onClick={() => setElementoSelecionado(null)} // Clicar fora desmarca a foto
-            >
-              {(!paginaAtiva.elementos || paginaAtiva.elementos.length === 0) && (
-                <p style={{ textAlign: 'center', color: '#ccc', marginTop: '300px' }}>Página em branco.</p>
-              )}
+            {/* Área de scroll do canvas */}
+            <div style={{ padding: '40px 20px 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100%' }}>
+              {/* O Palco — exatamente as dimensões do livro */}
+              <div
+                onClick={() => setSelectedId(null)}
+                style={{
+                  width: CANVAS_W, height: CANVAS_H,
+                  background: '#fefcf8',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.08)',
+                  position: 'relative', overflow: 'hidden',
+                  borderRadius: '3px 8px 8px 3px',
+                  backgroundImage: `
+                    linear-gradient(to right, #c8c3b5 0%, #e8e4d8 2%, #f8f6f2 4%, #fefcf8 100%)
+                  `,
+                  cursor: 'default',
+                  flexShrink: 0,
+                }}
+              >
+                {/* Linha de guia da lombada */}
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, bottom: 0, width: 28,
+                  background: 'linear-gradient(to right, rgba(0,0,0,0.08), transparent)',
+                  pointerEvents: 'none', zIndex: 1,
+                }} />
 
-              {/* RENDERIZAÇÃO DOS ELEMENTOS ARRASTÁVEIS */}
-              {paginaAtiva.elementos?.map((el) => (
-                <Rnd
-                  key={el.id}
-                  bounds="parent" // Impede que a foto saia do quadrado branco
-                  size={{ width: el.largura, height: el.altura }}
-                  position={{ x: el.x, y: el.y }}
-                  
-                  // Atualiza a posição ao terminar de arrastar
-                  onDragStop={(e, d) => {
-                    atualizarElemento(el.id, { x: d.x, y: d.y });
-                  }}
-                  
-                  // Atualiza tamanho e posição ao terminar de redimensionar
-                  onResizeStop={(e, direction, ref, delta, position) => {
-                    atualizarElemento(el.id, {
-                      largura: parseInt(ref.style.width, 10),
-                      altura: parseInt(ref.style.height, 10),
-                      ...position
-                    });
-                  }}
-                  
-                  onClick={(e) => {
-                    e.stopPropagation(); // Impede que o clique desmarque a foto
-                    setElementoSelecionado(el.id);
-                  }}
-                  
-                  style={{ 
-                    border: elementoSelecionado === el.id ? '2px dashed #007bff' : 'none',
-                    cursor: 'move',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                >
-                  <img src={el.url} alt="Foto" style={{ width: '100%', flex: 1, objectFit: 'cover' }} draggable="false" />
-                  
-                  {/* Renderiza a legenda embaixo da foto se ela existir */}
-                  {el.legenda && (
-                    <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', padding: '5px', textAlign: 'center', fontSize: '12px', borderTop: '1px solid #ddd' }}>
-                      {el.legenda}
-                    </div>
-                  )}
-                </Rnd>
-              ))}
+                {/* Linha de guia do topo/rodapé */}
+                <div style={{
+                  position: 'absolute', inset: '24px', border: '1px dashed rgba(200,170,105,0.25)',
+                  borderRadius: 2, pointerEvents: 'none', zIndex: 1,
+                }} />
+
+                {(!activePage.elementos || activePage.elementos.length === 0) && (
+                  <div style={{
+                    position: 'absolute', inset: 0, display: 'flex',
+                    flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 12, pointerEvents: 'none',
+                  }}>
+                    <span style={{ fontSize: 40, opacity: 0.15 }}>📷</span>
+                    <p style={{ fontSize: 13, color: '#b0ab9e', textAlign: 'center', lineHeight: 1.5 }}>
+                      Clique em "Adicionar Foto"<br />para começar a montar a página
+                    </p>
+                  </div>
+                )}
+
+                {/* ELEMENTOS ARRASTÁVEIS */}
+                {activePage.elementos?.map(el => (
+                  <Rnd
+                    key={el.id}
+                    bounds="parent"
+                    size={{ width: el.largura, height: el.altura }}
+                    position={{ x: el.x, y: el.y }}
+                    onDragStop={(_, d) => updateEl(el.id, { x: d.x, y: d.y })}
+                    onResizeStop={(_, __, ref, ___, pos) => updateEl(el.id, {
+                      largura: parseInt(ref.style.width),
+                      altura: parseInt(ref.style.height),
+                      ...pos,
+                    })}
+                    onClick={e => { e.stopPropagation(); setSelectedId(el.id); }}
+                    style={{
+                      border: selectedId === el.id
+                        ? '2px solid var(--cor-destaque)'
+                        : '2px solid transparent',
+                      cursor: 'move',
+                      boxShadow: selectedId === el.id
+                        ? '0 0 0 3px rgba(200,170,105,0.25)'
+                        : 'none',
+                      borderRadius: 4,
+                      transition: 'box-shadow 0.15s',
+                    }}
+                  >
+                    {el.url ? (
+                      <img src={el.url} alt="Foto"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 2, pointerEvents: 'none' }}
+                        draggable={false}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%', background: '#f0ece0',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexDirection: 'column', gap: 6, borderRadius: 2,
+                      }}>
+                        <span style={{ fontSize: 24, opacity: 0.4 }}>🖼️</span>
+                        <span style={{ fontSize: 10, color: '#b0ab9e', textAlign: 'center', padding: '0 8px', lineHeight: 1.4 }}>
+                          Cole a URL da imagem no painel ao lado
+                        </span>
+                      </div>
+                    )}
+                    {el.legenda && (
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        background: 'rgba(255,255,255,0.88)', padding: '4px 6px',
+                        fontSize: 10, color: '#555', textAlign: 'center',
+                        backdropFilter: 'blur(4px)',
+                      }}>
+                        {el.legenda}
+                      </div>
+                    )}
+                  </Rnd>
+                ))}
+              </div>
+
+              <p style={{ marginTop: 16, fontSize: 11, color: '#b0ab9e', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                {CANVAS_W} × {CANVAS_H} px — Proporção A5
+              </p>
             </div>
           </>
         ) : (
-          <div style={{ marginTop: '300px', color: '#777' }}>
-            <h2>Nenhuma página selecionada</h2>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, color: '#b0ab9e' }}>
+            <span style={{ fontSize: 48, opacity: 0.3 }}>📖</span>
+            <p style={{ fontSize: 14, textAlign: 'center', lineHeight: 1.6 }}>
+              Selecione uma página na barra lateral<br />
+              ou crie uma nova para começar
+            </p>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* 3. BARRA LATERAL DIREITA: PROPRIEDADES DA FOTO */}
-      {paginaAtiva && (
-        <div style={{ width: '300px', backgroundColor: '#fff', borderLeft: '1px solid #ccc', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <h3 style={{ fontSize: '16px', color: 'var(--cor-texto)', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Propriedades</h3>
-          
-          {elementoSelecionado ? (
-            <>
-              <div className="input-group">
-                <label className="admin-label">Link da Imagem (URL)</label>
-                <input 
-                  className="text-input"
-                  type="text" 
-                  placeholder="https://exemplo.com/foto.jpg"
-                  value={paginaAtiva.elementos.find(el => el.id === elementoSelecionado)?.url || ''}
-                  onChange={(e) => atualizarElemento(elementoSelecionado, { url: e.target.value })}
+      {/* ===== PAINEL DE PROPRIEDADES ===== */}
+      <aside style={{
+        width: 260, background: '#fff', borderLeft: '1px solid #ede9e0',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #ede9e0' }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--cor-texto)' }}>
+            {selectedEl ? 'Propriedades da Foto' : 'Propriedades'}
+          </h3>
+        </div>
+
+        <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
+          {selectedEl ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* Preview da imagem */}
+              {selectedEl.url && (
+                <div style={{ width: '100%', height: 120, borderRadius: 6, overflow: 'hidden', background: '#f0ece0', border: '1px solid #ede9e0' }}>
+                  <img src={selectedEl.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+
+              <div>
+                <label style={labelStyle}>URL da Imagem</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={selectedEl.url}
+                  onChange={e => updateEl(selectedEl.id, { url: e.target.value })}
+                  style={inputStyle}
                 />
               </div>
 
-              <div className="input-group">
-                <label className="admin-label">Legenda da Foto</label>
-                <input 
-                  className="text-input"
-                  type="text" 
-                  placeholder="Ex: Viagem para a praia"
-                  value={paginaAtiva.elementos.find(el => el.id === elementoSelecionado)?.legenda || ''}
-                  onChange={(e) => atualizarElemento(elementoSelecionado, { legenda: e.target.value })}
+              <div>
+                <label style={labelStyle}>Legenda</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Formatura 2024"
+                  value={selectedEl.legenda || ''}
+                  onChange={e => updateEl(selectedEl.id, { legenda: e.target.value })}
+                  style={inputStyle}
                 />
               </div>
 
-              <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-                <p style={{ fontSize: '12px', color: '#888', marginBottom: '10px' }}>Largura: {paginaAtiva.elementos.find(el => el.id === elementoSelecionado)?.largura}px</p>
-                <button 
-                  onClick={() => removerElemento(elementoSelecionado)}
-                  style={{ width: '100%', padding: '10px', backgroundColor: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              {/* Posição e dimensões */}
+              <div>
+                <label style={labelStyle}>Posição & Tamanho</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {[
+                    { label: 'X', key: 'x' },
+                    { label: 'Y', key: 'y' },
+                    { label: 'Largura', key: 'largura' },
+                    { label: 'Altura', key: 'altura' },
+                  ].map(({ label, key }) => (
+                    <div key={key}>
+                      <span style={{ fontSize: 10, color: '#9b9790', display: 'block', marginBottom: 3 }}>{label}</span>
+                      <input
+                        type="number"
+                        value={Math.round(selectedEl[key])}
+                        onChange={e => updateEl(selectedEl.id, { [key]: Number(e.target.value) })}
+                        style={{ ...inputStyle, textAlign: 'center', padding: '6px 4px' }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Botões de ação rápida */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button
+                  onClick={() => updateEl(selectedEl.id, { x: 0, y: 0, largura: CANVAS_W, altura: CANVAS_H })}
+                  style={{ flex: 1, padding: '8px 4px', background: '#f5f0e8', color: 'var(--cor-texto)', border: '1px solid #ede9e0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'inherit', fontWeight: 600 }}
                 >
-                  Excluir esta Foto
+                  Página Inteira
+                </button>
+                <button
+                  onClick={() => updateEl(selectedEl.id, { x: Math.max(0, Math.floor((CANVAS_W - selectedEl.largura) / 2)), y: Math.max(0, Math.floor((CANVAS_H - selectedEl.altura) / 2)) })}
+                  style={{ flex: 1, padding: '8px 4px', background: '#f5f0e8', color: 'var(--cor-texto)', border: '1px solid #ede9e0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: 'inherit', fontWeight: 600 }}
+                >
+                  Centralizar
                 </button>
               </div>
-            </>
+
+              <button
+                onClick={() => removeEl(selectedEl.id)}
+                style={{ width: '100%', padding: '10px', background: '#fff5f5', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit', marginTop: 8 }}
+              >
+                Excluir Foto
+              </button>
+            </div>
           ) : (
-            <p style={{ fontSize: '14px', color: '#aaa', textAlign: 'center', marginTop: '50px' }}>
-              Clique em uma foto no palco para editar a URL e a legenda dela.
-            </p>
+            <div style={{ textAlign: 'center', color: '#c0bbb4', marginTop: 60, lineHeight: 1.6, fontSize: 13 }}>
+              Clique em uma foto no palco para editar suas propriedades
+            </div>
           )}
         </div>
-      )}
+      </aside>
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
+
+/* =====================================================
+   ESTILOS UTILITÁRIOS
+   ===================================================== */
+const labelStyle = {
+  display: 'block',
+  fontSize: 11,
+  fontWeight: 700,
+  color: '#9b9790',
+  textTransform: 'uppercase',
+  letterSpacing: '0.07em',
+  marginBottom: 6,
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '9px 10px',
+  border: '1.5px solid #ede9e0',
+  borderRadius: 6,
+  fontSize: 13,
+  fontFamily: 'inherit',
+  color: 'var(--cor-texto)',
+  background: '#faf8f5',
+  outline: 'none',
+  transition: 'border-color 0.2s',
+};
+
+const toolbarBtn = (bg, color, disabled = false) => ({
+  padding: '9px 18px',
+  background: disabled ? '#ccc' : bg,
+  color,
+  border: 'none',
+  borderRadius: 6,
+  fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  transition: 'all 0.2s',
+  opacity: disabled ? 0.7 : 1,
+});

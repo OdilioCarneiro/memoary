@@ -11,19 +11,22 @@ import anuarioCapa from './assets/anuario.svg';
 import LoginPage from './LoginPage';
 import AdminPage from './AdminPage';
 
+// REGISTRA A CONFIGURAÇÃO DO ENDEREÇO DO RENDER
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
   : 'https://memoary.onrender.com';
 
+// Registra o GSAP
 gsap.registerPlugin(ScrollTrigger);
 
 // ==========================================
-// 1. O ORQUESTRADOR PRINCIPAL
+// 1. O ORQUESTRADOR
 // ==========================================
 export default function App() {
   const [currentView, setCurrentView] = useState('book');
-  const [anuarioData, setAnuarioData] = useState([]); 
+  const [anuarioData, setAnuarioData] = useState([]); // Guarda os dados vindos do banco
 
+  // Busca as fotos salvas no MongoDB toda vez que o site carrega
   useEffect(() => {
     async function carregarDadosDoBanco() {
       try {
@@ -37,11 +40,15 @@ export default function App() {
       }
     }
     carregarDadosDoBanco();
-  }, [currentView]); 
+  }, [currentView]); // Recarrega quando alternamos de tela (ex: após adicionar foto no admin)
 
   const handleLoginClick = () => {
     const token = localStorage.getItem('adminToken');
-    setCurrentView(token ? 'admin' : 'login');
+    if (token) {
+      setCurrentView('admin');
+    } else {
+      setCurrentView('login');
+    }
   };
 
   if (currentView === 'login') {
@@ -49,7 +56,7 @@ export default function App() {
       <div style={{ minHeight: '100vh', backgroundColor: 'var(--cor-fundo)', padding: '20px' }}>
         <button 
           onClick={() => setCurrentView('book')} 
-          style={{ cursor: 'pointer', background: 'none', border: 'none', fontWeight: 'bold', color: 'var(--cor-texto)', display: 'flex', alignItems: 'center', gap: '8px' }}
+          style={{ cursor: 'pointer', background: 'none', border: 'none', fontWeight: 'bold', color: 'var(--cor-texto)' }}
         >
           ← Voltar ao Anuário
         </button>
@@ -61,10 +68,10 @@ export default function App() {
   if (currentView === 'admin') {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: 'var(--cor-fundo)' }}>
-        <header style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', background: '#fff', boxShadow: '0 2px 15px rgba(0,0,0,0.05)' }}>
+        <header style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
           <button 
             onClick={() => setCurrentView('book')}
-            style={{ cursor: 'pointer', background: 'none', border: 'none', fontWeight: 'bold', color: 'var(--cor-texto)', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ cursor: 'pointer', background: 'none', border: 'none', fontWeight: 'bold', color: 'var(--cor-texto)' }}
           >
             ← Visualizar Anuário
           </button>
@@ -73,7 +80,7 @@ export default function App() {
               localStorage.removeItem('adminToken');
               setCurrentView('login');
             }}
-            style={{ cursor: 'pointer', background: '#c62828', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', transition: '0.2s' }}
+            style={{ cursor: 'pointer', background: '#c62828', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold' }}
           >
             Sair do Painel
           </button>
@@ -87,7 +94,7 @@ export default function App() {
 }
 
 // ==========================================
-// 2. LIVRO 3D (ANIMAÇÕES REALISTAS E SEM BUGS)
+// 2. O COMPONENTE DO LIVRO 3D
 // ==========================================
 function BookViewer({ onLoginClick, pages }) {
   const containerRef = useRef(null);
@@ -97,36 +104,35 @@ function BookViewer({ onLoginClick, pages }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [bookIsOpen, setBookIsOpen] = useState(false);
 
-  // FÍSICA DO FRAMER MOTION PARA AS PÁGINAS
   const dragX = useMotionValue(0);
   const rotateRight = useTransform(dragX, [0, -300], [0, -180]);
   const zRight = useTransform(dragX, [0, -150, -300], [0.5, 10, 0.5]);
   const rotateLeft = useTransform(dragX, [0, 300], [-180, 0]);
   const zLeft = useTransform(dragX, [0, 150, 300], [0.5, 10, 0.5]);
 
-  const animacaoDeTroca = { duration: 0.5, ease: [0.25, 1, 0.5, 1] }; // Curva bezier suave (Design Padrão)
-
-  const handleDragEnd = (e, info) => {
+  // Função para arrastar com o mouse (Mantida e funcionando)
+  const handleDragEnd = (_, info) => {
     if (!bookIsOpen || pages.length === 0) return;
 
-    if (info.offset.x < -80 && currentPage < pages.length - 1) {
-      animate(dragX, -300, animacaoDeTroca).then(() => {
+    if (info.offset.x < -50 && currentPage < pages.length - 1) {
+      animate(dragX, -300, { duration: 0.4, ease: "easeInOut" }).then(() => {
         setCurrentPage(prev => prev + 1);
         dragX.set(0);
       });
-    } else if (info.offset.x > 80 && currentPage > 0) {
-      animate(dragX, 300, animacaoDeTroca).then(() => {
+    } else if (info.offset.x > 50 && currentPage > 0) {
+      animate(dragX, 300, { duration: 0.4, ease: "easeInOut" }).then(() => {
         setCurrentPage(prev => prev - 1);
         dragX.set(0);
       });
     } else {
-      animate(dragX, 0, { type: "spring", stiffness: 250, damping: 25 });
+      animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
     }
   };
 
+  // Funções extras para os botões de clique
   const virarDireita = () => {
     if (currentPage < pages.length - 1) {
-      animate(dragX, -300, animacaoDeTroca).then(() => {
+      animate(dragX, -300, { duration: 0.4, ease: "easeInOut" }).then(() => {
         setCurrentPage(prev => prev + 1);
         dragX.set(0);
       });
@@ -135,14 +141,13 @@ function BookViewer({ onLoginClick, pages }) {
 
   const virarEsquerda = () => {
     if (currentPage > 0) {
-      animate(dragX, 300, animacaoDeTroca).then(() => {
+      animate(dragX, 300, { duration: 0.4, ease: "easeInOut" }).then(() => {
         setCurrentPage(prev => prev - 1);
         dragX.set(0);
       });
     }
   };
 
-  // ANIMAÇÃO DE ENTRADA DO GSAP (FIXADA E OTIMIZADA)
   useGSAP(() => {
     gsap.set(bookRef.current, {
       xPercent: -50,
@@ -156,22 +161,14 @@ function BookViewer({ onLoginClick, pages }) {
 
     gsap.set(".fixed-header", { opacity: 0, y: -20 });
 
-    let stateBookIsCurrentlyOpen = false;
-
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: ".viewport-hero",
         start: "top top",
-        end: "+=2000", // Mais curto para a animação não ser tão demorada no scroll
+        end: "+=2500", 
         scrub: 1,      
         pin: true,     
-        onUpdate: (self) => { 
-          const shouldBeOpen = self.progress > 0.6;
-          if (shouldBeOpen !== stateBookIsCurrentlyOpen) {
-            stateBookIsCurrentlyOpen = shouldBeOpen;
-            setBookIsOpen(shouldBeOpen);
-          }
-        }
+        onUpdate: (self) => { setBookIsOpen(self.progress > 0.6); }
       }
     });
 
@@ -180,7 +177,7 @@ function BookViewer({ onLoginClick, pages }) {
     tl.to(bookRef.current, { left: "50%", xPercent: -50, yPercent: -50, rotationY: 0, rotationZ: 0, scale: 1, duration: 1.2, ease: "power2.inOut" }, 0); 
     tl.to(coverRef.current, { rotationY: -180, duration: 1.5, ease: "power2.inOut" }, "+=0.2");
 
-  }, { scope: containerRef, dependencies: [] });
+  }, { scope: containerRef });
 
   return (
     <div ref={containerRef} className="app-container">
@@ -205,8 +202,7 @@ function BookViewer({ onLoginClick, pages }) {
         </div>
 
         <div ref={bookRef} className="book-3d-container">
-          {/* CAPA DO LIVRO */}
-          <div ref={coverRef} className="book-cover-3d" style={{ transform: 'translateZ(2px)', zIndex: 10 }}>
+          <div ref={coverRef} className="book-cover-3d" style={{ transform: 'translateZ(2px)' }}>
             <div className="cover-side-front">
               <img src={anuarioCapa} alt="Capa" className="capa-img-render" />
             </div>
@@ -217,44 +213,41 @@ function BookViewer({ onLoginClick, pages }) {
             </div>
           </div>
 
-          {/* ÚLTIMA PÁGINA (ESTÁTICA NO FUNDO) */}
-          <div className="static-page right-side" style={{ transform: 'translateZ(-2px)', zIndex: 1 }}>
+          <div className="static-page right-side" style={{ transform: 'translateZ(-2px)' }}>
             <div className="page-face page-front" style={{ background: '#e3dfd3' }}>
                <div className="inside-cover-blend">
-                  <p style={{ color: '#8b8984', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase' }}>Fim do Anuário</p>
+                  <p style={{ color: '#8b8984' }}>Fim do Anuário</p>
                </div>
             </div>
           </div>
 
           {pages.length === 0 ? (
-            <div className="static-page right-side" style={{ zIndex: 2 }}>
+            <div className="static-page right-side">
               <div className="page-face page-front" style={{ padding: '20px', textAlign: 'center' }}>
-                <p style={{ color: '#8b8984', marginTop: '50%' }}>O livro de memórias está vazio.</p>
+                <p style={{ color: '#8b8984', marginTop: '40%' }}>Nenhuma página adicionada ainda.</p>
               </div>
             </div>
           ) : (
             <>
-              {/* PÁGINA ESTÁTICA ESQUERDA (Fundo) */}
               {currentPage > 1 && (
-                <div className="static-page left-side" style={{ transform: 'rotateY(-180deg) translateZ(0px)', zIndex: 2 }}>
+                <div className="static-page left-side" style={{ transform: 'rotateY(-180deg) translateZ(0px)' }}>
                   <div className="page-face page-back">
                     <RenderAdminContent page={pages[currentPage - 2]} />
                   </div>
                 </div>
               )}
 
-              {/* PÁGINA ESTÁTICA DIREITA (Fundo) */}
               {currentPage < pages.length - 1 && (
-                <div className="static-page right-side" style={{ transform: 'translateZ(0px)', zIndex: 2 }}>
+                <div className="static-page right-side" style={{ transform: 'translateZ(0px)' }}>
                   <div className="page-face page-front">
                     <RenderAdminContent page={pages[currentPage + 1]} />
                   </div>
                 </div>
               )}
 
-              {/* PÁGINA ANIMADA (Voltando) */}
+              {/* CORREÇÃO: Variáveis das páginas flutuantes ao voltar */}
               {currentPage > 0 && (
-                <motion.div className="flippable-page-container" style={{ rotateY: rotateLeft, z: zLeft, zIndex: 3 }}>
+                <motion.div className="flippable-page-container" style={{ rotateY: rotateLeft, z: zLeft }}>
                   <div className="page-face page-front">
                     <RenderAdminContent page={pages[currentPage]} />
                   </div>
@@ -264,9 +257,9 @@ function BookViewer({ onLoginClick, pages }) {
                 </motion.div>
               )}
 
-              {/* PÁGINA ANIMADA (Avançando) */}
+              {/* CORREÇÃO: Variáveis das páginas flutuantes ao avançar */}
               {currentPage < pages.length - 1 && (
-                <motion.div className="flippable-page-container" style={{ rotateY: rotateRight, z: zRight, zIndex: 4 }}>
+                <motion.div className="flippable-page-container" style={{ rotateY: rotateRight, z: zRight }}>
                   <div className="page-face page-front">
                     <RenderAdminContent page={pages[currentPage]} />
                   </div>
@@ -278,7 +271,6 @@ function BookViewer({ onLoginClick, pages }) {
             </>
           )}
 
-          {/* OVERLAY DE ARRASTO */}
           {bookIsOpen && pages.length > 0 && (
             <motion.div
               className="drag-overlay"
@@ -289,18 +281,18 @@ function BookViewer({ onLoginClick, pages }) {
             />
           )}
 
-          {/* CONTROLES DO LIVRO */}
+          {/* Botões extras de navegação (aparecem embaixo do livro) */}
           {bookIsOpen && pages.length > 1 && (
-            <div style={{ position: 'absolute', top: '105%', left: '50%', transform: 'translate(-50%, 0)', display: 'flex', gap: '15px', zIndex: 100 }}>
+            <div style={{ position: 'absolute', top: '105%', left: '50%', transform: 'translate(-50%, 0)', display: 'flex', gap: '20px', zIndex: 100 }}>
               <button 
                 onClick={virarEsquerda} 
-                style={{ background: 'var(--cor-texto)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage > 0 ? 1 : 0.4, pointerEvents: currentPage > 0 ? 'auto' : 'none', transition: '0.3s' }}
+                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage > 0 ? 1 : 0.5, pointerEvents: currentPage > 0 ? 'auto' : 'none' }}
               >
                 ← Voltar
               </button>
               <button 
                 onClick={virarDireita} 
-                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage < pages.length - 1 ? 1 : 0.4, pointerEvents: currentPage < pages.length - 1 ? 'auto' : 'none', transition: '0.3s' }}
+                style={{ background: 'var(--cor-destaque)', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', opacity: currentPage < pages.length - 1 ? 1 : 0.5, pointerEvents: currentPage < pages.length - 1 ? 'auto' : 'none' }}
               >
                 Avançar →
               </button>
@@ -313,16 +305,16 @@ function BookViewer({ onLoginClick, pages }) {
 }
 
 // ==========================================
-// 3. RENDERIZADOR DO MODO CANVA (O SEGREDO DA BELEZA)
+// 3. A MÁGICA DO MODO CANVA ACONTECE AQUI
 // ==========================================
 function RenderAdminContent({ page }) {
   if (!page) return null;
   
   return (
+    // CORREÇÃO: O position absolute garante que a tela ignore o padding e use os 440x700px integrais
     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
       {page.elementos?.map((element, index) => {
         
-        // Elementos posicionados via Canva
         if (element.tipo === "imagem" && element.x !== undefined) {
           return (
             <div
@@ -333,49 +325,23 @@ function RenderAdminContent({ page }) {
                 top: `${element.y}px`,
                 width: `${element.largura}px`,
                 height: `${element.altura}px`,
-                // Adicionamos estética de álbum: sombra suave, fundo branco (tipo polaroid) e bordas arredondadas sutis
-                backgroundColor: '#fff',
-                padding: '4px', // Cria uma bordinha branca de foto revelada
-                boxShadow: '0 4px 10px rgba(0,0,0,0.08)', 
-                borderRadius: '4px',
-                display: 'flex',
-                flexDirection: 'column'
+                overflow: 'hidden'
               }}
             >
               <img 
-                src={element.url} 
-                alt="Foto colada" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '2px' }} 
+                src={element.url}
+                alt={element.legenda || 'Foto do anuário'}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              
-              {/* Legenda estilizada para parecer escrita à mão ou impressa na borda da foto */}
-              {element.legenda && (
-                <div style={{ 
-                  paddingTop: '6px', 
-                  textAlign: 'center', 
-                  fontSize: '11px', 
-                  color: 'var(--cor-texto)', 
-                  fontWeight: '600',
-                  fontStyle: 'italic',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {element.legenda}
-                </div>
-              )}
             </div>
           );
         }
 
-        // Fallback para páginas criadas antes do modo Canva (Centralizadas)
         if (element.tipo === "imagem") {
           return (
-            <div key={index} style={{ padding: '40px 20px', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ padding: '8px', background: '#fff', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', borderRadius: '4px' }}>
-                <img src={element.url} alt="Foto" style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '2px' }} />
-                {element.legenda && <p style={{ marginTop: '12px', color: 'var(--cor-texto)', fontStyle: 'italic', fontSize: '13px' }}>{element.legenda}</p>}
-              </div>
+            <div key={index} style={{ padding: '20px', textAlign: 'center' }}>
+              <img src={element.url} alt="Foto" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+              {element.legenda && <p style={{ marginTop: '10px', color: '#555' }}>{element.legenda}</p>}
             </div>
           );
         }
@@ -385,3 +351,5 @@ function RenderAdminContent({ page }) {
     </div>
   );
 }
+
+
