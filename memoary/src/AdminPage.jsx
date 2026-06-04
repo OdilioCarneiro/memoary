@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rnd } from 'react-rnd';
+import './AdminPage.css';
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
@@ -436,85 +437,6 @@ export default function AdminPage() {
           )}
         </div>
       </aside>
-
-      {/* ===== REQUISITOS GLOBAIS DE ESTILIZAÇÃO (ESTILO APPLE ECOSYSTEM) ===== */}
-      <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        
-        /* Botões Padrão de Sistemas Operacionais Modernos */
-        .apple-btn-primary {
-          width: 100%; padding: 10px 16px; background: #0066cc; color: #ffffff;
-          border: none; borderRadius: 8px; fontWeight: 500; fontSize: 13.5px;
-          cursor: pointer; display: flex; alignItems: center; justifyContent: center;
-          gap: 6px; transition: background 0.18s ease, transform 0.1s ease;
-        }
-        .apple-btn-primary:hover { background: #0055b3; }
-        .apple-btn-primary:active { transform: scale(0.98); }
-
-        .apple-btn-secondary {
-          padding: 8px 14px; background: #ffffff; color: #1d1d1f;
-          border: 1px solid #d2d2d7; borderRadius: 7px; fontWeight: 500; fontSize: 13px;
-          cursor: pointer; display: flex; alignItems: center; justifyContent: center;
-          gap: 6px; transition: all 0.18s ease;
-        }
-        .apple-btn-secondary:hover { background: #f5f5f7; border-color: #86868b; }
-
-        .apple-btn-action {
-          padding: 8px 16px; border: none; borderRadius: 7px; fontWeight: 500;
-          fontSize: 13px; cursor: pointer; display: flex; alignItems: center; gap: 6px;
-          transition: all 0.18s ease;
-        }
-        .apple-btn-action:hover:not(:disabled) { opacity: 0.9; }
-
-        .apple-btn-danger {
-          width: 100%; padding: 10px; background: #ffffff; color: #ff453a;
-          border: 1px solid #ffccd2; borderRadius: 8px; cursor: pointer;
-          fontWeight: 500; fontSize: 13px; display: flex; alignItems: center;
-          justify-content: center; gap: 6px; transition: all 0.18s ease;
-        }
-        .apple-btn-danger:hover { background: #ff453a; color: #ffffff; border-color: #ff453a; }
-
-        /* Inputs de Alta Fidelidade Visual */
-        .input-field-group { display: flex; flex-direction: column; gap: 6px; }
-        .apple-label { fontSize: 11px; fontWeight: 600; color: '#86868b'; text-transform: uppercase; letter-spacing: 0.02em; }
-        .apple-input {
-          width: 100%; padding: 8px 12px; border: 1px solid #d2d2d7;
-          borderRadius: 7px; fontSize: 13px; color: #1d1d1f; background: #ffffff;
-          outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
-          box-sizing: border-box;
-        }
-        .apple-input:focus {
-          border-color: #0066cc;
-          box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
-        }
-
-        /* Itens Decorativos Interativos */
-        .sidebar-page-item:hover { background: #f5f5f7; }
-        .btn-icon-delete {
-          background: none; border: none; cursor: pointer; padding: 6px;
-          borderRadius: 6px; color: #86868b; display: flex; alignItems: center;
-          justify-content: center; opacity: 0; transition: all 0.15s ease;
-        }
-        .sidebar-page-item:hover .btn-icon-delete { opacity: 1; }
-        .btn-icon-delete:hover { background: #ffebeb; color: #ff453a; }
-
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d2d2d7; borderRadius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #86868b; }
-
-        /* Loading Spinner */
-        .spinner {
-          width: 24px; height: 24px; border: 2.5px solid #d2d2d7;
-          border-top-color: #0066cc; borderRadius: 50%;
-          animation: spin 0.8s linear infinite; margin: 0 auto;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }
