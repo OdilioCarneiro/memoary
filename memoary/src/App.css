@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Teachers:wght@400;600;700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -8,51 +8,48 @@
 
 :root {
   --cor-fundo: #faf8f5;
-  --cor-texto: #1e1810;
-  --cor-destaque: #b89a52;
-  --cor-destaque-dark: #8c7238;
-  --cor-destaque-light: #e8d9a8;
-  --sombra-livro: rgba(20, 12, 4, 0.55);
+  --cor-texto: #322A18;
+  --cor-destaque: #C8AA69;
+  --cor-destaque-dark: #a88a45;
+  --sombra-livro: rgba(30, 20, 5, 0.55);
   --pagina-clara: #fefcf8;
   --pagina-borda: #dedad0;
-  --lombada: #1e1408;
-  --texto-suave: #6b6257;
-  --borda-suave: #e8e3d8;
+  --lombada: #2a1f0e;
 }
 
 body, html, #root {
   width: 100%;
   min-height: 100vh;
   background-color: var(--cor-fundo);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Teachers', sans-serif;
   color: var(--cor-texto);
   overflow-x: hidden;
 }
 
 /* =============================================
-   HEADER FIXO
+   HEADER
    ============================================= */
 .fixed-header {
   position: fixed;
   top: 0; left: 0;
   width: 100%;
-  height: 76px;
+  height: 80px;
   z-index: 200;
-  padding: 0 52px;
+  padding: 0 50px;
   display: flex;
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.5s ease, backdrop-filter 0.5s ease, background 0.5s ease;
+  transition: opacity 0.5s ease, backdrop-filter 0.5s ease;
 }
 
 .fixed-header.visible {
   opacity: 1;
   pointer-events: auto;
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  background: rgba(250, 248, 245, 0.82);
-  border-bottom: 1px solid rgba(184, 154, 82, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(250, 248, 245, 0.85);
+  border-bottom: 1px solid rgba(200, 170, 105, 0.2);
 }
 
 .header-content {
@@ -62,46 +59,30 @@ body, html, #root {
   align-items: center;
 }
 
-.logo-header { height: 32px; }
+.logo-header { height: 36px; }
 
 .login-btn {
   background: transparent;
-  border: 1px solid rgba(30, 24, 16, 0.28);
-  padding: 8px 32px;
-  border-radius: 2px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
+  border: 1.5px solid var(--cor-texto);
+  padding: 8px 28px;
+  border-radius: 25px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Teachers', sans-serif;
   color: var(--cor-texto);
   cursor: pointer;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  transition: all 0.28s ease;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.25s ease;
+  letter-spacing: 0.03em;
 }
-
-.login-btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--cor-texto);
-  transform: translateY(100%);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: -1;
-}
-
 .login-btn:hover {
+  background: var(--cor-texto);
   color: var(--cor-fundo);
-  border-color: var(--cor-texto);
-}
-
-.login-btn:hover::after {
-  transform: translateY(0);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(50, 42, 24, 0.2);
 }
 
 /* =============================================
-   HERO CONTAINER
+   HERO + PINNED SECTION
    ============================================= */
 .app-container {
   width: 100%;
@@ -115,23 +96,21 @@ body, html, #root {
   overflow: hidden;
   display: flex;
   align-items: center;
-  background: var(--cor-fundo);
 }
 
-/* Textura de papel sutil */
+/* Fundo com textura de papel sutíl */
 .viewport-hero::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(ellipse at 18% 48%, rgba(184, 154, 82, 0.055) 0%, transparent 58%),
-    radial-gradient(ellipse at 82% 22%, rgba(30, 24, 16, 0.035) 0%, transparent 48%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+    radial-gradient(ellipse at 20% 50%, rgba(200, 170, 105, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(50, 42, 24, 0.04) 0%, transparent 50%);
   pointer-events: none;
 }
 
 /* =============================================
-   PAINEL ESQUERDO (SLOGAN)
+   PAINEL DA ESQUERDA (SLOGAN)
    ============================================= */
 .left-hero-panel {
   position: absolute;
@@ -150,72 +129,70 @@ body, html, #root {
 }
 
 .slogan-text {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 3.4rem;
-  font-weight: 300;
-  line-height: 1.12;
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.1;
   text-align: right;
   color: var(--cor-texto);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .highlight-gold {
   color: var(--cor-destaque);
   font-style: italic;
-  font-weight: 400;
 }
 
 .logo-initial-container {
   display: flex;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
-.logo-initial { height: 72px; }
+.logo-initial { height: 80px; }
 
-/* Indicador de scroll */
+/* Scroll hint */
 .scroll-hint {
   position: absolute;
-  bottom: 44px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: var(--cor-destaque);
-  font-size: 10px;
-  font-family: 'DM Sans', sans-serif;
-  letter-spacing: 0.22em;
+  font-size: 12px;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  font-weight: 500;
   opacity: 1;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.4s ease;
   z-index: 10;
 }
 
-.scroll-hint.hidden { opacity: 0; pointer-events: none; }
+.scroll-hint.hidden { opacity: 0; }
 
 .scroll-arrow {
-  width: 1px;
-  height: 48px;
-  background: linear-gradient(to bottom, var(--cor-destaque), transparent);
-  animation: scrollPulse 1.8s ease infinite;
+  width: 20px;
+  height: 20px;
+  border-right: 2px solid var(--cor-destaque);
+  border-bottom: 2px solid var(--cor-destaque);
+  transform: rotate(45deg);
+  animation: scrollBounce 1.6s ease infinite;
 }
 
-@keyframes scrollPulse {
-  0%   { opacity: 1; transform: scaleY(1);   transform-origin: top; }
-  50%  { opacity: 0.4; }
-  100% { opacity: 1; transform: scaleY(1);   transform-origin: top; }
+@keyframes scrollBounce {
+  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 1; }
+  50% { transform: rotate(45deg) translateY(6px); opacity: 0.5; }
 }
 
 /* =============================================
-   LIVRO 3D
+   LIVRO 3D — CONTAINER PRINCIPAL
    ============================================= */
 .book-scene {
   position: absolute;
   perspective: 2800px;
-  perspective-origin: 50% 44%;
+  perspective-origin: 50% 45%;
   transform-style: preserve-3d;
   z-index: 5;
 }
@@ -223,22 +200,26 @@ body, html, #root {
 .book-3d-wrapper {
   position: relative;
   transform-style: preserve-3d;
-  filter: drop-shadow(0 55px 42px rgba(20, 12, 4, 0.48))
-          drop-shadow(0 16px 18px rgba(20, 12, 4, 0.22));
+  /* A sombra do livro sobre a superfície */
+  filter: drop-shadow(0 60px 40px rgba(30, 20, 5, 0.45));
 }
 
-/* Lombada */
+/* Lombada lateral visível */
 .book-spine {
   position: absolute;
-  left: -20px;
+  left: -18px;
   top: 0;
-  width: 20px;
+  width: 18px;
   height: 100%;
-  background: linear-gradient(to right, #0e0b06, #2a1f0e, #1a1208);
+  background: linear-gradient(to right, #1a1208, #3d2e12, #2a1f0e);
   transform-origin: right center;
   transform: rotateY(-90deg);
   backface-visibility: hidden;
   border-radius: 3px 0 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .book-spine::after {
@@ -246,30 +227,31 @@ body, html, #root {
   position: absolute;
   inset: 0;
   background: linear-gradient(to bottom,
-    rgba(255,255,255,0.1) 0%,
-    transparent 28%,
-    rgba(0,0,0,0.18) 72%,
-    rgba(0,0,0,0.38) 100%
+    rgba(255,255,255,0.12) 0%,
+    transparent 30%,
+    rgba(0,0,0,0.2) 70%,
+    rgba(0,0,0,0.4) 100%
   );
 }
 
-/* Topo */
+/* Topo e base do livro */
 .book-top {
   position: absolute;
-  top: -9px;
+  top: -8px;
   left: 0;
   width: 100%;
-  height: 9px;
-  background: linear-gradient(to bottom, #ede9df, #d0cbbf);
+  height: 8px;
+  background: linear-gradient(to bottom, #e8e4d8, #d4cfc0);
   transform-origin: bottom center;
   transform: rotateX(90deg);
   backface-visibility: hidden;
+  /* Efeito de páginas empilhadas */
   background-image: repeating-linear-gradient(
     90deg,
     transparent,
     transparent 2px,
-    rgba(0,0,0,0.035) 2px,
-    rgba(0,0,0,0.035) 3px
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 3px
   );
 }
 
@@ -282,9 +264,9 @@ body, html, #root {
   width: 100%; height: 100%;
   transform-style: preserve-3d;
   transform-origin: left center;
-  transition: transform 1.4s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1.000);
   z-index: 10;
-  border-radius: 2px 6px 6px 2px;
+  border-radius: 3px 6px 6px 3px;
 }
 
 .book-cover-3d.open {
@@ -297,19 +279,22 @@ body, html, #root {
   top: 0; left: 0;
   width: 100%; height: 100%;
   backface-visibility: hidden;
-  border-radius: 2px 6px 6px 2px;
+  border-radius: 3px 6px 6px 3px;
   overflow: hidden;
 }
 
-.cover-side-front { background: #1a1208; }
+.cover-side-front {
+  /* Reflexo sutil na capa */
+  background: #1a1208;
+}
 
 .cover-side-front::after {
   content: '';
   position: absolute;
   top: 0; left: 0;
-  width: 35%;
+  width: 40%;
   height: 100%;
-  background: linear-gradient(to right, rgba(255,255,255,0.06) 0%, transparent 100%);
+  background: linear-gradient(to right, rgba(255,255,255,0.04) 0%, transparent 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -318,13 +303,13 @@ body, html, #root {
   transform: rotateY(180deg);
   background: linear-gradient(
     to right,
-    #1e1408 0%,
-    #2a1f0e 3%,
-    #e8e4d8 5%,
-    #f4f0e8 10%,
+    #2a1f0e 0%,
+    #3d2e12 4%,
+    #e8e4d8 6%,
+    #f5f2ec 12%,
     #fefcf8 100%
   );
-  border-radius: 6px 2px 2px 6px;
+  border-radius: 6px 3px 3px 6px;
 }
 
 .capa-img-render {
@@ -334,29 +319,30 @@ body, html, #root {
   display: block;
 }
 
+/* Verniz sobre a capa */
 .cover-gloss {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    128deg,
-    rgba(255,255,255,0.13) 0%,
-    rgba(255,255,255,0.04) 22%,
-    transparent 48%,
-    rgba(0,0,0,0.09) 100%
+    135deg,
+    rgba(255,255,255,0.15) 0%,
+    rgba(255,255,255,0.05) 25%,
+    transparent 50%,
+    rgba(0,0,0,0.1) 100%
   );
   pointer-events: none;
   z-index: 3;
 }
 
 /* =============================================
-   PÁGINAS ESTÁTICAS
+   PÁGINAS ESTÁTICAS (FUNDO DO LIVRO)
    ============================================= */
 .static-page {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
   transform-style: preserve-3d;
-  border-radius: 2px 6px 6px 2px;
+  border-radius: 3px 6px 6px 3px;
   overflow: hidden;
 }
 
@@ -368,60 +354,51 @@ body, html, #root {
   overflow: hidden;
 }
 
+/* Textura de página realista */
 .page-face.page-right {
-  background: linear-gradient(
-    to right,
-    #c4bfb0 0%,
-    #e2ddd0 1.8%,
-    #f6f3ed 3.5%,
-    #fefcf8 100%
-  );
-  border-radius: 2px 6px 6px 2px;
+  background:
+    linear-gradient(to right, #c8c3b5 0%, #e8e4d8 2%, #f8f6f2 4%, #fefcf8 100%);
+  border-radius: 3px 6px 6px 3px;
 }
 
 .page-face.page-left {
-  background: linear-gradient(
-    to left,
-    #c4bfb0 0%,
-    #e2ddd0 1.8%,
-    #f6f3ed 3.5%,
-    #fefcf8 100%
-  );
-  border-radius: 6px 2px 2px 6px;
+  background:
+    linear-gradient(to left, #c8c3b5 0%, #e8e4d8 2%, #f8f6f2 4%, #fefcf8 100%);
+  border-radius: 6px 3px 3px 6px;
   transform: rotateY(180deg);
 }
 
-/* Sombra da lombada */
+/* Sombra da lombada nas páginas */
 .page-face.page-right::before {
   content: '';
   position: absolute;
   left: 0; top: 0;
-  width: 48px; height: 100%;
-  background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+  width: 40px; height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
   pointer-events: none;
   z-index: 1;
 }
 
-/* Borda de páginas empilhadas */
+/* Linhas de páginas empilhadas na borda direita */
 .page-stack-edge {
   position: absolute;
-  right: -5px;
-  top: 0.8%;
-  width: 6px;
-  height: 98.4%;
+  right: -4px;
+  top: 1%;
+  width: 5px;
+  height: 98%;
   background: repeating-linear-gradient(
     to bottom,
-    #e4e0d6,
-    #e4e0d6 1.2px,
-    #f2efe8 1.2px,
-    #f2efe8 3px
+    #e8e4d8,
+    #e8e4d8 1px,
+    #f5f2ec 1px,
+    #f5f2ec 3px
   );
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 2px 2px 0;
   z-index: -1;
 }
 
 /* =============================================
-   PÁGINA VIRANDO
+   PÁGINA VIRANDO — O CORAÇÃO DO EFEITO
    ============================================= */
 .flippable-page-container {
   position: absolute;
@@ -430,8 +407,44 @@ body, html, #root {
   transform-style: preserve-3d;
   transform-origin: left center;
   will-change: transform;
-  border-radius: 2px 6px 6px 2px;
+  border-radius: 3px 6px 6px 3px;
   pointer-events: none;
+}
+
+/* Sombra dinâmica projetada ao virar a página */
+.flip-shadow-right {
+  position: absolute;
+  top: 0; left: 100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(to left, rgba(30,15,0,0.35) 0%, transparent 80%);
+  transform-origin: left center;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.flip-shadow-left {
+  position: absolute;
+  top: 0; right: 100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(to right, rgba(30,15,0,0.35) 0%, transparent 80%);
+  transform-origin: right center;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+/* Curvatura de página — gradiente que simula o dobramento */
+.page-curl-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to left,
+    rgba(255,255,255,0.6) 0%,
+    rgba(220,215,200,0.3) 15%,
+    transparent 40%
+  );
+  pointer-events: none;
+  z-index: 2;
+  backface-visibility: hidden;
 }
 
 /* =============================================
@@ -453,70 +466,54 @@ body, html, #root {
    ============================================= */
 .book-nav {
   position: absolute;
-  bottom: -72px;
+  bottom: -70px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   z-index: 100;
   white-space: nowrap;
 }
 
 .book-nav-btn {
-  background: transparent;
-  color: var(--cor-texto);
-  border: 1px solid rgba(30, 24, 16, 0.22);
-  padding: 10px 28px;
-  border-radius: 2px;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transition: all 0.22s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.book-nav-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
   background: var(--cor-destaque);
-  transform: translateY(100%);
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: -1;
+  color: #fff;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-family: 'Teachers', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(200, 170, 105, 0.35);
 }
 
 .book-nav-btn:hover:not(:disabled) {
-  color: #fff;
-  border-color: var(--cor-destaque);
-}
-
-.book-nav-btn:hover:not(:disabled)::before {
-  transform: translateY(0);
+  background: var(--cor-destaque-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(200, 170, 105, 0.45);
 }
 
 .book-nav-btn:disabled {
-  opacity: 0.28;
+  opacity: 0.35;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .page-counter {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 15px;
-  font-style: italic;
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
   color: var(--cor-texto);
-  opacity: 0.5;
-  min-width: 88px;
+  opacity: 0.6;
+  min-width: 80px;
   text-align: center;
-  letter-spacing: 0.04em;
 }
 
 /* =============================================
-   CONTEÚDO DAS PÁGINAS
+   CONTEÚDO DENTRO DAS PÁGINAS
    ============================================= */
 .page-content-wrapper {
   position: absolute;
@@ -524,29 +521,30 @@ body, html, #root {
   overflow: hidden;
 }
 
+/* Número de página elegante */
 .page-number {
   position: absolute;
-  bottom: 20px;
-  font-family: 'Cormorant Garamond', serif;
+  bottom: 18px;
+  font-family: 'Playfair Display', serif;
   font-size: 11px;
-  font-style: italic;
-  color: rgba(30, 24, 16, 0.28);
-  letter-spacing: 0.14em;
+  color: rgba(50, 42, 24, 0.35);
+  letter-spacing: 0.1em;
 }
 
-.page-number.right { right: 26px; }
-.page-number.left  { left: 26px; }
+.page-number.right { right: 24px; }
+.page-number.left { left: 24px; }
 
+/* Linha decorativa de cabeçalho da página */
 .page-header-line {
   position: absolute;
-  top: 24px;
-  left: 26px; right: 26px;
+  top: 22px;
+  left: 24px; right: 24px;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(184, 154, 82, 0.32), transparent);
+  background: linear-gradient(to right, transparent, rgba(200, 170, 105, 0.4), transparent);
 }
 
 /* =============================================
-   EMPTY STATE — ELEGANTE SEM EMOJIS
+   EMPTY STATE
    ============================================= */
 .empty-book-state {
   display: flex;
@@ -554,72 +552,25 @@ body, html, #root {
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 48px 40px;
+  gap: 12px;
+  padding: 40px;
 }
 
-.empty-first-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  text-align: center;
-}
-
-/* Ornamento decorativo — linhas em vez de emoji */
-.empty-ornament {
-  width: 48px;
-  height: 48px;
-  position: relative;
-}
-
-.empty-ornament::before,
-.empty-ornament::after {
-  content: '';
-  position: absolute;
-}
-
-.empty-ornament::before {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(184, 154, 82, 0.4);
-  border-radius: 50%;
-}
-
-.empty-ornament::after {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
-  background: rgba(184, 154, 82, 0.22);
-  border-radius: 50%;
+.empty-book-icon {
+  font-size: 48px;
+  opacity: 0.25;
 }
 
 .empty-book-text {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 0.95rem;
-  font-weight: 300;
-  color: rgba(30, 24, 16, 0.38);
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: rgba(50, 42, 24, 0.4);
   text-align: center;
-  line-height: 1.7;
-}
-
-.empty-book-text span {
-  font-size: 0.82em;
-  opacity: 0.72;
-}
-
-.empty-page-rule {
-  width: 72px;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(184, 154, 82, 0.3), transparent);
+  line-height: 1.6;
 }
 
 /* =============================================
-   GUARDAS (ENDPAPERS)
+   PÁGINA INICIAL / FIM
    ============================================= */
 .endpaper {
   width: 100%;
@@ -627,77 +578,25 @@ body, html, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(138deg, #faf8f3 0%, #ede9df 100%);
+  background: linear-gradient(135deg, #faf8f3 0%, #f0ece0 100%);
 }
 
 .endpaper-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  opacity: 0.28;
+  gap: 16px;
+  opacity: 0.3;
 }
 
-.endpaper-logo { width: 88px; }
+.endpaper-logo { width: 100px; }
 
 .endpaper-text {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 10px;
-  font-style: italic;
-  letter-spacing: 0.28em;
+  font-family: 'Playfair Display', serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--cor-texto);
-}
-
-/* =============================================
-   ADMIN TOP BAR (header da view admin)
-   ============================================= */
-.admin-top-bar {
-  padding: 0 28px;
-  height: 60px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  border-bottom: 1px solid var(--borda-suave);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.admin-top-bar__back {
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-weight: 500;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  color: var(--cor-texto);
-  font-family: 'DM Sans', sans-serif;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.admin-top-bar__back:hover { opacity: 1; }
-
-.admin-top-bar__logout {
-  cursor: pointer;
-  background: transparent;
-  color: #b91c1c;
-  border: 1px solid rgba(185, 28, 28, 0.3);
-  padding: 7px 20px;
-  border-radius: 2px;
-  font-weight: 500;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-family: 'DM Sans', sans-serif;
-  transition: all 0.2s;
-}
-
-.admin-top-bar__logout:hover {
-  background: #b91c1c;
-  color: #fff;
 }
 
 /* =============================================
@@ -707,18 +606,18 @@ body, html, #root {
   .left-hero-panel {
     width: 90%;
     left: 5%;
-    top: 10%;
+    top: 12%;
     transform: none;
     justify-content: center;
   }
   .slogan-container { align-items: center; }
-  .slogan-text { text-align: center; font-size: 2.2rem; }
-  .logo-initial { height: 56px; }
-  .book-nav { bottom: -64px; gap: 16px; }
-  .book-nav-btn { padding: 8px 18px; font-size: 11px; }
+  .slogan-text { text-align: center; font-size: 2rem; }
+  .logo-initial { height: 60px; }
+  .book-nav { bottom: -60px; }
+  .book-nav-btn { padding: 8px 20px; font-size: 13px; }
 }
 
 @media (max-width: 500px) {
   .fixed-header { padding: 0 20px; }
-  .slogan-text { font-size: 1.75rem; }
+  .slogan-text { font-size: 1.6rem; }
 }
