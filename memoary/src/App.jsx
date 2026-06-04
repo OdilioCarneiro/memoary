@@ -153,7 +153,7 @@ function BookViewer({ onLoginClick, pages }) {
   const flipRotateY = useTransform(
     flipSpring,
     [0, 1],
-    flipDir === 'left' ? [0, 180] : [0, -180]
+    flipDir === 'left' ? [-180, 0] : [0, -180] // <- Corrigido aqui!
   );
 
   const foldBrightness = useTransform(
@@ -543,6 +543,7 @@ function StaticSpread({ leftPage, rightPage, spreadIndex, nextLeft, nextRight })
    4. PÁGINA VIRANDO — FÍSICA APRIMORADA
    ============================================== */
 function FlippingPage({
+  flipDir, // <- Adicionamos para saber a direção
   flipRotateY,
   flipProgress,
   foldBrightness,
@@ -556,6 +557,20 @@ function FlippingPage({
   const scaleX = useTransform(flipProgress, [0, 0.5, 1], [1, 0.97, 1]);
   const foldShadowOpacity = useTransform(flipProgress, [0, 0.4, 0.5, 0.6, 1], [0, 0.55, 0.7, 0.55, 0]);
   const edgeGlowOpacity = useTransform(flipProgress, [0, 0.45, 0.5, 0.55, 1], [0, 0.9, 1, 0.9, 0]);
+
+  // CONTROLE ABSOLUTO DE FLICKER (piscar branco)
+  // Troca a opacidade das faces exatamente aos 50% da rotação
+  const isRight = flipDir === 'right';
+  const frontOpacity = useTransform(
+    flipProgress, 
+    [0, 0.495, 0.5, 1], 
+    isRight ? [1, 1, 0, 0] : [0, 0, 1, 1]
+  );
+  const backOpacity = useTransform(
+    flipProgress, 
+    [0, 0.495, 0.5, 1], 
+    isRight ? [0, 0, 1, 1] : [1, 1, 0, 0]
+  );
 
   return (
     <motion.div
@@ -573,7 +588,16 @@ function FlippingPage({
       }}
     >
       {/* FRENTE da página virando */}
-      <div className="page-face page-right" style={{ backfaceVisibility: 'hidden', position: 'absolute', inset: 0 }}>
+      <motion.div 
+        className="page-face page-right" 
+        style={{ 
+          backfaceVisibility: 'hidden', 
+          WebkitBackfaceVisibility: 'hidden', // Segurança extra p/ Safari
+          position: 'absolute', 
+          inset: 0,
+          opacity: frontOpacity 
+        }}
+      >
         {fromRight
           ? <PageContent page={fromRight} side="right" />
           : <EmptyPageContent side="right" />
@@ -591,10 +615,7 @@ function FlippingPage({
         <motion.div
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '12%',
-            height: '100%',
+            top: 0, left: 0, width: '12%', height: '100%',
             background: 'linear-gradient(to right, rgba(255,245,220,0.7) 0%, transparent 100%)',
             opacity: edgeGlowOpacity,
             pointerEvents: 'none',
@@ -602,16 +623,18 @@ function FlippingPage({
           }}
         />
         <div className="page-header-line" />
-      </div>
+      </motion.div>
 
       {/* VERSO da página virando */}
-      <div
+      <motion.div
         className="page-face page-left"
         style={{
           backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
           transform: 'rotateY(180deg)',
           position: 'absolute',
           inset: 0,
+          opacity: backOpacity
         }}
       >
         {toFront
@@ -629,7 +652,7 @@ function FlippingPage({
           }}
         />
         <div className="page-header-line" />
-      </div>
+      </motion.div>
 
       {/* Sombra projetada sobre a página adjacente */}
       <motion.div
