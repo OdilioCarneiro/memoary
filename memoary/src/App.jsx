@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, useTransform, animate, useSpring } from 'framer-motion';
+import { motion, useTransform, animate, useSpring, useMotionValue } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -19,10 +19,8 @@ gsap.registerPlugin(ScrollTrigger);
 /* ==============================================
    CONSTANTES DE FÍSICA DO LIVRO
    ============================================== */
-// Dimensões do livro (px) — proporção A5 ligeiramente paisagem
 const BOOK_W = 420;
 const BOOK_H = 660;
-// Perspectiva da cena 3D
 const PERSPECTIVE = 2600;
 
 /* ==============================================
@@ -64,8 +62,14 @@ export default function App() {
   if (currentView === 'login') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--cor-fundo)', padding: '20px' }}>
-        <button onClick={() => setCurrentView('book')}
-          style={{ cursor: 'pointer', background: 'none', border: 'none', fontWeight: 'bold', color: 'var(--cor-texto)', marginBottom: '20px' }}>
+        <button
+          onClick={() => setCurrentView('book')}
+          style={{
+            cursor: 'pointer', background: 'none', border: 'none',
+            fontWeight: '600', color: 'var(--cor-texto)', marginBottom: '20px',
+            fontSize: 14, letterSpacing: '0.04em',
+          }}
+        >
           ← Voltar ao Anuário
         </button>
         <LoginPage onLoginSuccess={() => setCurrentView('admin')} />
@@ -76,13 +80,17 @@ export default function App() {
   if (currentView === 'admin') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--cor-fundo)' }}>
-        <header style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', boxShadow: '0 1px 0 rgba(0,0,0,0.08)' }}>
-          <button onClick={() => { setCurrentView('book'); fetchData(); }}
-            style={{ cursor: 'pointer', background: 'none', border: 'none', fontWeight: 'bold', color: 'var(--cor-texto)', fontSize: '14px' }}>
+        <header className="admin-topbar">
+          <button
+            onClick={() => { setCurrentView('book'); fetchData(); }}
+            className="admin-topbar-back"
+          >
             ← Visualizar Anuário
           </button>
-          <button onClick={() => { localStorage.removeItem('adminToken'); setCurrentView('login'); }}
-            style={{ cursor: 'pointer', background: '#c62828', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px' }}>
+          <button
+            onClick={() => { localStorage.removeItem('adminToken'); setCurrentView('login'); }}
+            className="admin-topbar-logout"
+          >
             Sair do Painel
           </button>
         </header>
@@ -107,24 +115,52 @@ function BookViewer({ onLoginClick, pages }) {
 
   const [bookIsOpen, setBookIsOpen] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
-  // currentSpread: índice da página da esquerda do spread atual
-  // -1 = capa + página 0
-  //  0 = páginas 0+1 (spread 1)
-  //  etc.
   const [spreadIndex, setSpreadIndex] = useState(-1);
-  const [flipDir, setFlipDir] = useState(null); // 'right' | 'left'
+  const [flipDir, setFlipDir] = useState(null);
+  const [flipPhase, setFlipPhase] = useState('idle'); // idle | first-half | second-half
 
-  // Spring suave para o ângulo da página virando
-  const flipAngle = useSpring(0, { stiffness: 200, damping: 28, mass: 0.8 });
+  // Raw motion value for fine-grained control
+  const flipProgress = useMotionValue(0); // 0 → 1
 
-  // Sombra projetada muda com o ângulo da virada
-  const shadowOpacity = useTransform(flipAngle, [-180, -90, 0, 90, 180], [0, 0.5, 0, 0.5, 0]);
+  // Spring-smoothed version for the DOM
+  const flipSpring = useSpring(flipProgress, {
+    stiffness: 260,
+    damping: 32,
+    mass: 0.7,
+    restDelta: 0.001,
+  });
+
+  // rotateY derived: 0 → -180 (forward) or 0 → 180 (backward)
+  const flipRotateY = useTransform(
+    flipSpring,
+    [0, 1],
+    flipDir === 'left' ? [0, 180] : [0, -180]
+  );
+
+  // Lighting: brightest at the edges, darker mid-fold
+  const foldBrightness = useTransform(
+    flipSpring,
+    [0, 0.25, 0.5, 0.75, 1],
+    [1, 0.92, 0.78, 0.92, 1]
+  );
+
+  // Shadow spread on adjacent page
+  const shadowOpacity = useTransform(
+    flipSpring,
+    [0, 0.15, 0.5, 0.85, 1],
+    [0, 0.45, 0.6, 0.45, 0]
+  );
+
+  // Perspective skew — simulates paper bowing
+  const pageSkewY = useTransform(
+    flipSpring,
+    [0, 0.5, 1],
+    [0, 2.5, 0]
+  );
 
   const totalSpreads = Math.ceil(pages.length / 2);
   const maxSpreadIndex = totalSpreads - 1;
 
-  /* -------- helpers de conteúdo de spread -------- */
-  // Dado um spreadIndex, retorna [leftPage, rightPage] (podem ser null)
   function getSpreadPages(idx) {
     if (idx < 0) return [null, pages[0] || null];
     const left = pages[idx * 2] || null;
@@ -134,47 +170,60 @@ function BookViewer({ onLoginClick, pages }) {
 
   const [currentLeft, currentRight] = getSpreadPages(spreadIndex);
 
-  /* -------- virar página para frente -------- */
+  /* -------- virar para frente -------- */
   const flipForward = useCallback(() => {
-    if (isFlipping || !bookIsOpen) return;
-    if (spreadIndex >= maxSpreadIndex) return;
+    if (isFlipping || !bookIsOpen || spreadIndex >= maxSpreadIndex) return;
     setIsFlipping(true);
     setFlipDir('right');
-    flipAngle.set(0);
-    animate(flipAngle, -180, {
-      duration: 0.75,
-      ease: [0.645, 0.045, 0.355, 1.0],
+    setFlipPhase('first-half');
+    flipProgress.set(0);
+
+    animate(flipProgress, 1, {
+      duration: 0.82,
+      ease: [0.22, 0.1, 0.36, 1],
+      onUpdate: (v) => {
+        if (v >= 0.5 && flipPhase === 'first-half') {
+          setFlipPhase('second-half');
+        }
+      },
       onComplete: () => {
         setSpreadIndex(prev => prev + 1);
-        flipAngle.set(0);
+        flipProgress.set(0);
         setIsFlipping(false);
         setFlipDir(null);
+        setFlipPhase('idle');
       }
     });
-  }, [isFlipping, bookIsOpen, spreadIndex, maxSpreadIndex, flipAngle]);
+  }, [isFlipping, bookIsOpen, spreadIndex, maxSpreadIndex, flipProgress, flipPhase]);
 
-  /* -------- virar página para trás -------- */
+  /* -------- virar para trás -------- */
   const flipBackward = useCallback(() => {
-    if (isFlipping || !bookIsOpen) return;
-    if (spreadIndex < 0) return;
+    if (isFlipping || !bookIsOpen || spreadIndex < 0) return;
     setIsFlipping(true);
     setFlipDir('left');
-    flipAngle.set(0);
-    animate(flipAngle, 180, {
-      duration: 0.75,
-      ease: [0.645, 0.045, 0.355, 1.0],
+    setFlipPhase('first-half');
+    flipProgress.set(0);
+
+    animate(flipProgress, 1, {
+      duration: 0.82,
+      ease: [0.22, 0.1, 0.36, 1],
+      onUpdate: (v) => {
+        if (v >= 0.5 && flipPhase === 'first-half') {
+          setFlipPhase('second-half');
+        }
+      },
       onComplete: () => {
         setSpreadIndex(prev => prev - 1);
-        flipAngle.set(0);
+        flipProgress.set(0);
         setIsFlipping(false);
         setFlipDir(null);
+        setFlipPhase('idle');
       }
     });
-  }, [isFlipping, bookIsOpen, spreadIndex, flipAngle]);
+  }, [isFlipping, bookIsOpen, spreadIndex, flipProgress, flipPhase]);
 
   /* -------- GSAP SCROLL TRIGGER -------- */
   useGSAP(() => {
-    // Estado inicial do livro (antes do scroll)
     gsap.set(bookSceneRef.current, {
       xPercent: -50,
       yPercent: -50,
@@ -195,11 +244,9 @@ function BookViewer({ onLoginClick, pages }) {
         onUpdate(self) {
           const opened = self.progress > 0.62;
           if (opened !== bookIsOpen) setBookIsOpen(opened);
-          // Esconde o scroll hint quando o usuário começa a rolar
           if (scrollHintRef.current) {
             scrollHintRef.current.classList.toggle('hidden', self.progress > 0.05);
           }
-          // Header visível depois que o texto some
           if (headerRef.current) {
             headerRef.current.classList.toggle('visible', self.progress > 0.35);
           }
@@ -207,10 +254,13 @@ function BookViewer({ onLoginClick, pages }) {
       }
     });
 
-    // Texto sai pela esquerda
-    tl.to(heroTextRef.current, { opacity: 0, x: -60, duration: 0.5, ease: 'power2.in' }, 0);
+    tl.to(heroTextRef.current, {
+      opacity: 0,
+      x: -60,
+      duration: 0.5,
+      ease: 'power2.in',
+    }, 0);
 
-    // Livro se centraliza e endireita
     tl.to(bookSceneRef.current, {
       left: '50%',
       xPercent: -50,
@@ -218,29 +268,22 @@ function BookViewer({ onLoginClick, pages }) {
       rotationZ: 0,
       scale: 1,
       duration: 1,
-      ease: 'power3.inOut'
+      ease: 'power3.inOut',
     }, 0.1);
 
-    // Capa abre — CSS transition cuida disso via classe
     tl.add(() => {
       if (coverRef.current) coverRef.current.classList.add('open');
     }, 0.65);
 
   }, { scope: containerRef, dependencies: [] });
 
-  /* -------- Drag para virar (swipe) -------- */
+  /* -------- Drag / swipe -------- */
   const handleDragEnd = (e, info) => {
     if (!bookIsOpen || isFlipping) return;
     if (info.offset.x < -60) flipForward();
     else if (info.offset.x > 60) flipBackward();
   };
 
-  /* -------- Rotação 3D durante o flip -------- */
-  // A página que está virando rotaciona em torno do eixo left
-  const flipRotateY = useTransform(flipAngle, v => v);
-
-  /* -------- Conteúdo das páginas durante a animação -------- */
-  // nextSpread: o que aparecerá depois da virada
   const nextSpreadIndex = flipDir === 'right' ? spreadIndex + 1 : spreadIndex - 1;
   const [nextLeft, nextRight] = getSpreadPages(nextSpreadIndex);
 
@@ -254,7 +297,7 @@ function BookViewer({ onLoginClick, pages }) {
       <header ref={headerRef} className="fixed-header">
         <div className="header-content">
           <img src={logoSvg} alt="Memoary" className="logo-header" />
-          <button className="login-btn" onClick={onLoginClick}>login</button>
+          <button className="login-btn" onClick={onLoginClick}>Entrar</button>
         </div>
       </header>
 
@@ -281,8 +324,7 @@ function BookViewer({ onLoginClick, pages }) {
         </div>
 
         {/* CENA DO LIVRO */}
-        <div ref={bookSceneRef} className="book-scene"
-          style={{ perspective: PERSPECTIVE }}>
+        <div ref={bookSceneRef} className="book-scene" style={{ perspective: PERSPECTIVE }}>
 
           <div className="book-3d-wrapper"
             style={{ width: BOOK_W, height: BOOK_H, transformStyle: 'preserve-3d', position: 'relative' }}>
@@ -293,14 +335,16 @@ function BookViewer({ onLoginClick, pages }) {
             {/* TOPO */}
             <div className="book-top" style={{ width: BOOK_W }} />
 
-            {/* BORDA DE PÁGINAS (direita) */}
+            {/* BORDA DE PÁGINAS */}
             <div className="page-stack-edge" />
 
-            {/* === PÁGINAS DE FUNDO (spread atual, estáticas) === */}
+            {/* === PÁGINAS DE FUNDO === */}
             <StaticSpread
               leftPage={currentLeft}
               rightPage={currentRight}
               spreadIndex={spreadIndex}
+              nextLeft={isFlipping && flipDir === 'right' ? nextLeft : null}
+              nextRight={isFlipping && flipDir === 'left' ? nextRight : null}
               width={BOOK_W}
               height={BOOK_H}
             />
@@ -310,11 +354,12 @@ function BookViewer({ onLoginClick, pages }) {
               <FlippingPage
                 flipDir={flipDir}
                 flipRotateY={flipRotateY}
+                flipProgress={flipSpring}
+                foldBrightness={foldBrightness}
                 shadowOpacity={shadowOpacity}
-                fromLeft={flipDir === 'left' ? nextRight : currentRight}
-                fromRight={flipDir === 'right' ? currentRight : nextLeft}
+                pageSkewY={pageSkewY}
+                fromRight={flipDir === 'right' ? currentRight : nextRight}
                 toFront={flipDir === 'right' ? nextLeft : currentLeft}
-                toBack={flipDir === 'left' ? currentLeft : nextRight}
                 spreadIndex={spreadIndex}
                 nextSpreadIndex={nextSpreadIndex}
                 width={BOOK_W}
@@ -339,19 +384,19 @@ function BookViewer({ onLoginClick, pages }) {
               </div>
             </div>
 
-            {/* ÁREA DE ARRASTE (só quando aberto) */}
+            {/* DRAG OVERLAY */}
             {bookIsOpen && (
               <motion.div
                 className="drag-overlay"
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.1}
+                dragElastic={0.08}
                 onDragEnd={handleDragEnd}
                 style={{ zIndex: 30 }}
               />
             )}
 
-            {/* BOTÕES DE NAVEGAÇÃO */}
+            {/* NAVEGAÇÃO */}
             {bookIsOpen && (
               <div className="book-nav">
                 <button
@@ -359,12 +404,12 @@ function BookViewer({ onLoginClick, pages }) {
                   onClick={flipBackward}
                   disabled={isFlipping || spreadIndex < 0}
                 >
-                  ← Anterior
+                  Anterior
                 </button>
                 <span className="page-counter">
                   {spreadIndex < 0
                     ? 'Capa'
-                    : `${spreadIndex * 2 + 1}–${Math.min(spreadIndex * 2 + 2, pages.length)} / ${pages.length}`
+                    : `${spreadIndex * 2 + 1} – ${Math.min(spreadIndex * 2 + 2, pages.length)} / ${pages.length}`
                   }
                 </span>
                 <button
@@ -372,7 +417,7 @@ function BookViewer({ onLoginClick, pages }) {
                   onClick={flipForward}
                   disabled={isFlipping || spreadIndex >= maxSpreadIndex}
                 >
-                  Próxima →
+                  Próxima
                 </button>
               </div>
             )}
@@ -384,18 +429,23 @@ function BookViewer({ onLoginClick, pages }) {
 }
 
 /* ==============================================
-   3. SPREAD ESTÁTICO (páginas de fundo)
+   3. SPREAD ESTÁTICO
    ============================================== */
-function StaticSpread({ leftPage, rightPage, spreadIndex}) {
+function StaticSpread({ leftPage, rightPage, spreadIndex, nextLeft, nextRight }) {
   const isFirstSpread = spreadIndex < 0;
+
+  // When flipping forward, show next left page already on the left side
+  // When flipping backward, show next right page on the right side
+  const displayLeft = nextLeft || leftPage;
+  const displayRight = nextRight || rightPage;
 
   return (
     <>
-      {/* Página da DIREITA (sempre visível como fundo) */}
+      {/* Página da DIREITA */}
       <div className="static-page" style={{ zIndex: 1 }}>
         <div className="page-face page-right">
-          {rightPage
-            ? <PageContent page={rightPage} side="right" />
+          {displayRight
+            ? <PageContent page={displayRight} side="right" />
             : <EmptyPageContent side="right" isFirst={isFirstSpread} />
           }
           <div className="page-header-line" />
@@ -405,12 +455,12 @@ function StaticSpread({ leftPage, rightPage, spreadIndex}) {
         </div>
       </div>
 
-      {/* Página da ESQUERDA (visível quando livro aberto) */}
+      {/* Página da ESQUERDA */}
       {spreadIndex >= 0 && (
         <div className="static-page" style={{ zIndex: 1 }}>
           <div className="page-face page-left">
-            {leftPage
-              ? <PageContent page={leftPage} side="left" />
+            {displayLeft
+              ? <PageContent page={displayLeft} side="left" />
               : <EmptyPageContent side="left" />
             }
             <div className="page-header-line" />
@@ -423,57 +473,119 @@ function StaticSpread({ leftPage, rightPage, spreadIndex}) {
 }
 
 /* ==============================================
-   4. PÁGINA VIRANDO (animação 3D)
+   4. PÁGINA VIRANDO — FÍSICA APRIMORADA
    ============================================== */
-function FlippingPage({flipRotateY, shadowOpacity, fromRight, toFront, width, height }) {
-  // A página que vira parte da direita (indo para frente) ou da esquerda (voltando)
-  // Frente da página que vira: conteúdo atual do lado que está virando
-  // Verso: conteúdo que vai aparecer do outro lado
+function FlippingPage({
+  flipRotateY,
+  flipProgress,
+  foldBrightness,
+  shadowOpacity,
+  pageSkewY,
+  fromRight,
+  toFront,
+  width,
+  height,
+}) {
+  // Curvatura de papel: escala X levemente no meio da virada (simula encurvamento)
+  const scaleX = useTransform(flipProgress, [0, 0.5, 1], [1, 0.97, 1]);
+
+  // Gradiente de sombra lateral (sombra de dobramento)
+  const foldShadowOpacity = useTransform(flipProgress, [0, 0.4, 0.5, 0.6, 1], [0, 0.55, 0.7, 0.55, 0]);
+
+  // Brilho na borda da folha (reflexo de papel)
+  const edgeGlowOpacity = useTransform(flipProgress, [0, 0.45, 0.5, 0.55, 1], [0, 0.9, 1, 0.9, 0]);
 
   return (
     <motion.div
       className="flippable-page-container"
       style={{
         rotateY: flipRotateY,
+        skewY: pageSkewY,
+        scaleX,
         zIndex: 15,
         transformStyle: 'preserve-3d',
         transformOrigin: 'left center',
         width,
         height,
+        filter: useTransform(foldBrightness, v => `brightness(${v})`),
       }}
     >
       {/* FRENTE da página virando */}
-      <div className="page-face page-right" style={{ backfaceVisibility: 'hidden' }}>
+      <div className="page-face page-right" style={{ backfaceVisibility: 'hidden', position: 'absolute', inset: 0 }}>
         {fromRight
           ? <PageContent page={fromRight} side="right" />
           : <EmptyPageContent side="right" />
         }
-        {/* Curvatura simulada */}
-        <div className="page-curl-overlay" />
+        {/* Sombra de dobramento sobre a frente */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to left, rgba(20,12,0,0.0) 0%, rgba(20,12,0,0.55) 30%, rgba(20,12,0,0.0) 100%)',
+            opacity: foldShadowOpacity,
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        />
+        {/* Brilho de reflexo da borda */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '12%',
+            height: '100%',
+            background: 'linear-gradient(to right, rgba(255,245,220,0.7) 0%, transparent 100%)',
+            opacity: edgeGlowOpacity,
+            pointerEvents: 'none',
+            zIndex: 6,
+          }}
+        />
         <div className="page-header-line" />
       </div>
 
       {/* VERSO da página virando */}
-      <div className="page-face page-left" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+      <div
+        className="page-face page-left"
+        style={{
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(180deg)',
+          position: 'absolute',
+          inset: 0,
+        }}
+      >
         {toFront
           ? <PageContent page={toFront} side="left" />
           : <EmptyPageContent side="left" />
         }
+        {/* Sombra de dobramento no verso */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to right, rgba(20,12,0,0.0) 0%, rgba(20,12,0,0.45) 25%, rgba(20,12,0,0.0) 100%)',
+            opacity: foldShadowOpacity,
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        />
         <div className="page-header-line" />
       </div>
 
-      {/* Sombra projetada */}
+      {/* Sombra projetada sobre a página adjacente */}
       <motion.div
         style={{
           position: 'absolute',
           top: 0,
-          right: '-40%',
-          width: '40%',
+          right: '-45%',
+          width: '45%',
           height: '100%',
-          background: 'linear-gradient(to right, rgba(20,10,0,0.3), transparent)',
+          background: 'linear-gradient(to right, rgba(15,8,0,0.38) 0%, rgba(15,8,0,0.15) 50%, transparent 100%)',
           opacity: shadowOpacity,
           backfaceVisibility: 'hidden',
           pointerEvents: 'none',
+          zIndex: 20,
+          borderRadius: '0 6px 6px 0',
         }}
       />
     </motion.div>
@@ -481,9 +593,9 @@ function FlippingPage({flipRotateY, shadowOpacity, fromRight, toFront, width, he
 }
 
 /* ==============================================
-   5. RENDER DO CONTEÚDO DA PÁGINA ADMIN
+   5. CONTEÚDO DE PÁGINA
    ============================================== */
-function PageContent({ page}) {
+function PageContent({ page }) {
   if (!page) return null;
   return (
     <div className="page-content-wrapper">
@@ -497,8 +609,8 @@ function PageContent({ page}) {
             width: el.largura ?? 200,
             height: el.altura ?? 150,
             overflow: 'hidden',
-            borderRadius: 4,
-            boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+            borderRadius: 3,
+            boxShadow: '0 2px 16px rgba(0,0,0,0.14)',
           }}>
             <img
               src={el.url}
@@ -511,12 +623,13 @@ function PageContent({ page}) {
               <div style={{
                 position: 'absolute',
                 bottom: 0, left: 0, right: 0,
-                background: 'rgba(255,255,255,0.88)',
+                background: 'rgba(255,252,248,0.92)',
                 padding: '5px 8px',
                 fontSize: '10px',
                 color: '#555',
                 textAlign: 'center',
-                backdropFilter: 'blur(4px)',
+                backdropFilter: 'blur(6px)',
+                letterSpacing: '0.03em',
               }}>
                 {el.legenda}
               </div>
@@ -529,25 +642,21 @@ function PageContent({ page}) {
 }
 
 /* ==============================================
-   6. PÁGINA VAZIA (placeholder elegante)
+   6. PÁGINA VAZIA
    ============================================== */
 function EmptyPageContent({ side, isFirst }) {
   return (
     <div className="empty-book-state">
       {isFirst && side === 'right' ? (
-        <>
-          <div className="empty-book-icon">📖</div>
+        <div className="empty-book-inner">
+          <div className="empty-book-ornament" />
           <p className="empty-book-text">
             Nenhuma página adicionada ainda.<br />
-            <span style={{ fontSize: '0.85em', opacity: 0.7 }}>Acesse o painel de administrador para começar.</span>
+            <span>Acesse o painel de administrador para começar.</span>
           </p>
-        </>
+        </div>
       ) : (
-        <div style={{
-          width: '60%',
-          height: 1,
-          background: 'linear-gradient(to right, transparent, rgba(200,170,105,0.3), transparent)'
-        }} />
+        <div className="empty-page-divider" />
       )}
     </div>
   );
