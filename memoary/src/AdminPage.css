@@ -169,3 +169,52 @@
 @keyframes spin { 
   to { transform: rotate(360deg); } 
 }
+/* Botões de Controle Superior (Padrão Apple) */
+.apple-btn-nav {
+  padding: 8px 14px;
+  background: #ffffff;
+  color: var(--cor-texto, #1d1d1f);
+  border: 1px solid #d2d2d7;
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.apple-btn-nav:hover {
+  background: #f5f5f7;
+  border-color: var(--cor-destaque, #C8AA69);
+  color: var(--cor-destaque, #C8AA69);
+}
+
+.apple-btn-exit {
+  padding: 8px 14px;
+  background: transparent;
+  color: #ff453a;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.apple-btn-exit:hover {
+  background: #fff5f5;
+  border-color: #ffccd2;
+}
+
+/* Forçar a cor de destaque oficial do site nos componentes principais */
+:root {
+  --cor-destaque: #C8AA69;
+  --cor-destaque-dark: #b59656;
+}

@@ -184,3 +184,29 @@ app.delete('/api/anuario/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Erro ao deletar página.' });
   }
 });
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Nenhum arquivo de mídia detectado.' });
+    }
+
+    // Converte o arquivo recebido na memória para Buffer base64
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+
+    // Dispara o upload exclusivo para o diretório do Cloudinary
+    const cldRes = await cloudinary.uploader.upload(dataURI, {
+      folder: "anuario_disciplina"
+    });
+
+    // Retorna estritamente a URL segura. Sem alterações precoces no MongoDB.
+    res.json({ 
+      success: true, 
+      url: cldRes.secure_url 
+    });
+
+  } catch (error) {
+    console.error('Erro na rota de upload estrutural:', error);
+    res.status(500).json({ success: false, message: 'Falha interna ao processar armazenamento em nuvem.' });
+  }
+});
