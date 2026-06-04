@@ -621,3 +621,70 @@ body, html, #root {
   .fixed-header { padding: 0 20px; }
   .slogan-text { font-size: 1.6rem; }
 }
+
+/* =============================================
+   MEDIA QUERIES - RESPONSIVIDADE
+   ============================================= */
+
+@media (max-width: 899px) {
+  /* Centraliza a Logo e Botão de Login no mobile */
+  .fixed-header {
+    padding: 0 20px;
+    height: 70px;
+  }
+  .login-btn {
+    padding: 6px 20px;
+    font-size: 14px;
+  }
+
+  /* Reposiciona o texto "Slogan" para ficar no topo da tela */
+  .left-hero-panel {
+    left: 50%;
+    top: 12%; /* Joga o texto para a parte superior */
+    transform: translateX(-50%);
+    width: 90vw;
+    max-width: 100%;
+    justify-content: center;
+    z-index: 10; /* Garante que fique sobre o livro fechado */
+  }
+
+  .slogan-container {
+    align-items: center;
+    text-align: center;
+  }
+
+  .slogan-text {
+    text-align: center;
+    font-size: 2.2rem; /* Texto levemente menor */
+  }
+
+  .logo-initial-container {
+    justify-content: center;
+  }
+
+  .logo-initial {
+    height: 60px;
+  }
+
+  /* Ajustes dos botões de virar página para telas menores */
+  .book-nav {
+    bottom: -90px; /* Dá espaço para os dedos no celular */
+    gap: 12px;
+  }
+
+  .book-nav-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .page-counter {
+    min-width: 60px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .slogan-text {
+    font-size: 1.8rem;
+  }
+}
