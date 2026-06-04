@@ -7,7 +7,7 @@
 .apple-btn-primary {
   width: 100%;
   padding: 10px 16px;
-  background: #0066cc;
+  background: #C8AA69; /* Cor oficial atualizada */
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -19,6 +19,14 @@
   justify-content: center;
   gap: 6px;
   transition: background 0.18s ease, transform 0.1s ease;
+}
+
+.apple-btn-primary:hover { 
+  background: #b59656; /* Tom mais escuro para o efeito hover */
+}
+
+.apple-btn-primary:active { 
+  transform: scale(0.98); 
 }
 .apple-btn-primary:hover { 
   background: #0055b3; 

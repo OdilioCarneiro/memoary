@@ -157,14 +157,13 @@ export default function AdminPage() {
 
   /* ---------- Botões Globais de Navegação ---------- */
   const handleVisualizarAnuario = () => {
-    // Redireciona para a home pública ou página do anuário aberto ao público
     window.open('/', '_blank');
   };
 
   const handleSairPainel = () => {
     if (window.confirm('Deseja realmente sair do painel administrativo?')) {
-      localStorage.removeItem('token-super-secreto-do-memoary'); // Ajuste se usar localStorage
-      window.location.href = '/login'; // Altere para a sua rota de login real
+      localStorage.removeItem('token-super-secreto-do-memoary');
+      window.location.href = '/login';
     }
   };
 
@@ -300,7 +299,7 @@ export default function AdminPage() {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f5f5f7', overflow: 'hidden' }}>
         {activePage ? (
           <>
-            {/* Top Sub-Bar (Sub-menu com novas ações integradas) */}
+            {/* Top Sub-Bar (Sub-menu com ações principais integradas à direita) */}
             <div style={{ height: 52, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid #e8e8ed', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 12, zIndex: 10 }}>
               <button onClick={addPhoto} className="apple-btn-secondary">
                 <IconImage /> Inserir Mídia
