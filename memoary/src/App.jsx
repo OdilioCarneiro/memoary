@@ -159,15 +159,20 @@ function BookViewer({ onLoginClick, pages }) {
   const [flipState,   setFlipState]   = useState(null);
   const [photoModal,  setPhotoModal]  = useState(null);
 
-  // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
-  // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
+  // Escala responsiva baseada no viewport real disponível para o livro
   const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
     const updateScale = () => {
-      const scaleW = window.innerWidth / 1000;
-      const scaleH = window.innerHeight / 1100; 
-      const newScale = Math.min(scaleW, scaleH, 1.2); 
-      setBookScale(newScale);
+      const isMobile = window.innerWidth <= 899;
+      // Em mobile o livro ocupa quase toda a largura; em desktop ~55%
+      const availW = isMobile
+        ? window.innerWidth * 0.88
+        : window.innerWidth * 0.54;
+      // Reserva espaço para o texto hero em cima e a nav embaixo
+      const availH = window.innerHeight * (isMobile ? 0.58 : 0.78);
+      const scaleW = availW / BOOK_W;
+      const scaleH = availH / BOOK_H;
+      setBookScale(Math.min(scaleW, scaleH, 1));
     };
     updateScale();
     window.addEventListener('resize', updateScale);
@@ -304,12 +309,18 @@ function BookViewer({ onLoginClick, pages }) {
         </div>
          
         <div ref={bookSceneRef} className="book-scene" style={{ perspective: PERSP }}>
-          <div style={{ transform: `scale(${bookScale})`, transformOrigin: 'center center' }}></div>
+          {/* Wrapper de escala responsiva — envolve o livro inteiro */}
+          <div style={{
+            transform: `scale(${bookScale})`,
+            transformOrigin: 'center center',
+            display: 'inline-block',
+            transformStyle: 'preserve-3d',
+          }}>
           <div ref={bookOuterRef} className="book-outer"
             style={{
               width:BOOK_W, height:BOOK_H,
               transformStyle:'preserve-3d', position:'relative',
-              boxShadow:'-10px 10px 20px rgba(20,14,5,0.2)', /* 🔥 Sombra 3D segura */
+              boxShadow:'-10px 10px 20px rgba(20,14,5,0.2)',
               transition:'box-shadow 0.6s ease'
             }}>
 
@@ -370,6 +381,8 @@ function BookViewer({ onLoginClick, pages }) {
                 </button>
               </nav>
             )}
+          </div>
+          {/* close scale wrapper */}
           </div>
         </div>
       </div>
@@ -766,7 +779,16 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     if (ok) setCommentText('');
   };
 
+  // Detecta se é mobile para layout em coluna única
+  const [isMobileModal, setIsMobileModal] = useState(() => window.innerWidth < 640);
+  useEffect(() => {
+    const check = () => setIsMobileModal(window.innerWidth < 640);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
+  // Em mobile mostra só a foto (sem painel de comentários lateral)
+  const [showCommentsMobile, setShowCommentsMobile] = useState(false);
 
   if (!cur || !cur.url) return null;
 
@@ -781,27 +803,30 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
         position:'fixed', inset:0, zIndex:9000,
         background:'rgba(8,5,2,0.93)',
         display:'flex', alignItems:'center', justifyContent:'center',
-        padding:20,
+        padding: isMobileModal ? 0 : 20,
       }}
     >
       <motion.div
-        initial={{ opacity:0, scale:0.95, y:16 }}
+        initial={{ opacity:0, scale:0.97, y:16 }}
         animate={{ opacity:1, scale:1,    y:0  }}
-        exit={{    opacity:0, scale:0.95, y:16 }}
+        exit={{    opacity:0, scale:0.97, y:16 }}
         transition={{ duration:0.3, ease:[0.16,1,0.3,1] }}
         onClick={e => e.stopPropagation()}
         style={{
           display:'flex',
-          width:'min(94vw, 1080px)',
-          height:'min(92vh, 700px)',
-          borderRadius:14,
+          flexDirection: isMobileModal ? 'column' : 'row',
+          width: isMobileModal ? '100vw' : 'min(94vw, 1080px)',
+          height: isMobileModal ? '100dvh' : 'min(92vh, 700px)',
+          borderRadius: isMobileModal ? 0 : 14,
           overflow:'hidden',
           background:'var(--white)',
           boxShadow:'0 48px 120px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.35)',
         }}
       >
+        {/* ── Área da foto ── */}
         <div style={{
-          flex:'1 1 58%', minWidth:0,
+          flex: isMobileModal ? (showCommentsMobile ? '0 0 52%' : '1 1 auto') : '1 1 58%',
+          minWidth:0, minHeight: isMobileModal ? 0 : undefined,
           background:'#0d0a06',
           position:'relative',
           display:'flex', alignItems:'center', justifyContent:'center',
@@ -841,7 +866,7 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
               <p style={{
                 fontFamily:'var(--f-display)', fontStyle:'italic',
                 fontSize:13, color:'rgba(255,255,255,0.8)',
-                letterSpacing:'0.035em', textAlign:'center', margin:0
+                letterSpacing:'0.035em', textAlign:'center', margin:0,
               }}>
                 {cur.legenda}
               </p>
@@ -849,128 +874,168 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
           )}
 
           {hasPrev && (
-            <button className="lb-nav-btn lb-nav-left" onClick={() => goTo(curIdx-1)}>
+            <button
+              onClick={() => goTo(curIdx-1)}
+              style={{
+                position:'absolute', top:'50%', left:14, transform:'translateY(-50%)',
+                zIndex:3, width:42, height:42, borderRadius:'50%',
+                background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
+                color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+                cursor:'pointer', backdropFilter:'blur(8px)', transition:'background 0.2s',
+              }}
+            >
               <IcoNavLeft />
             </button>
           )}
           {hasNext && (
-            <button className="lb-nav-btn lb-nav-right" onClick={() => goTo(curIdx+1)}>
+            <button
+              onClick={() => goTo(curIdx+1)}
+              style={{
+                position:'absolute', top:'50%', right:14, transform:'translateY(-50%)',
+                zIndex:3, width:42, height:42, borderRadius:'50%',
+                background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
+                color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+                cursor:'pointer', backdropFilter:'blur(8px)', transition:'background 0.2s',
+              }}
+            >
               <IcoNavRight />
+            </button>
+          )}
+
+          {/* Botão de fechar no canto (visível em mobile) */}
+          <button
+            onClick={onClose}
+            style={{
+              position:'absolute', top:14, right:14, zIndex:10,
+              width:36, height:36, borderRadius:'50%',
+              background:'rgba(0,0,0,0.45)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+              cursor:'pointer', backdropFilter:'blur(8px)',
+            }}
+          >
+            <IcoClose />
+          </button>
+
+          {/* Botão de comentários (mobile) */}
+          {isMobileModal && (
+            <button
+              onClick={e => { e.stopPropagation(); setShowCommentsMobile(v => !v); }}
+              style={{
+                position:'absolute', bottom:14, right:14, zIndex:10,
+                height:36, padding:'0 16px', borderRadius:18,
+                background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)',
+                color:'#fff', display:'flex', alignItems:'center', gap:6,
+                cursor:'pointer', backdropFilter:'blur(8px)',
+                fontSize:12, fontFamily:'var(--f-ui)', fontWeight:500,
+              }}
+            >
+              <IcoHeart filled={false} />
+              <span>{comments.length} comentário{comments.length !== 1 ? 's' : ''}</span>
             </button>
           )}
         </div>
 
-        <div style={{
-          flex:'1 1 42%', minWidth:320,
-          display:'flex', flexDirection:'column',
-          background:'var(--surface-0)',
-        }}>
-          <header style={{
-            display:'flex', alignItems:'center', justifyContent:'space-between',
-            padding:'16px 20px', borderBottom:'1px solid var(--surface-2)',
-          }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <span style={{ fontFamily:'var(--f-display)', fontSize:18, fontWeight:500, fontStyle:'italic', color:'var(--ink)' }}>
-                Comentários
-              </span>
-              <span style={{ fontSize:11, fontWeight:600, color:'var(--ink-50)', background:'var(--surface-2)', padding:'2px 8px', borderRadius:10 }}>
-                {comments.length}
-              </span>
-            </div>
-            <button onClick={onClose}
-              style={{
-                background:'none', border:'none', cursor:'pointer',
-                color:'var(--ink-50)', padding:4, marginRight:-4,
-              }}
-            >
-              <IcoClose />
-            </button>
-          </header>
-
-          <div ref={listRef} className="photo-comment-list" style={{
-            flex:1, overflowY:'auto', padding:'0 20px',
-            display:'flex', flexDirection:'column',
-          }}>
-            {loading ? (
-              <div style={{ margin:'auto', color:'var(--ink-25)' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation:'lbSpin 1s linear infinite' }}>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-              </div>
-            ) : comments.length === 0 ? (
-              <div style={{ margin:'auto', textAlign:'center', color:'var(--ink-25)', maxWidth:200 }}>
-                <IcoHeart filled={false} />
-                <p style={{ marginTop:12, fontSize:13, lineHeight:1.5 }}>Seja o primeiro a deixar uma memória nesta foto.</p>
-              </div>
-            ) : (
-              comments.map(c => (
-                <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />
-              ))
-            )}
-          </div>
-
+        {/* ── Painel de comentários ── */}
+        {(!isMobileModal || showCommentsMobile) && (
           <div style={{
-            padding:'16px 20px', borderTop:'1px solid var(--surface-2)',
-            background:'var(--white)',
+            flex: isMobileModal ? '1 1 auto' : '1 1 42%',
+            minWidth:0,
+            display:'flex', flexDirection:'column',
+            background:'var(--surface-0)',
+            borderTop: isMobileModal ? '1px solid var(--surface-2)' : 'none',
           }}>
-            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <Avatar name={guestName} size={32} />
-              <input
-                ref={inputRef}
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handlePost()}
-                placeholder="Adicione um comentário…"
-                disabled={posting}
-                style={{
-                  flex:1, border:'none', background:'transparent',
-                  outline:'none', fontSize:13, color:'var(--ink)',
-                  fontFamily:'var(--f-ui)', padding:'8px 0',
-                }}
-              />
-              <button onClick={handlePost} disabled={posting || !commentText.trim()}
-                style={{
-                  background:'none', border:'none', cursor:'pointer', padding:4,
-                  color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)',
-                  transition:'color 0.15s, transform 0.15s',
-                  transform: posting ? 'scale(0.85)' : 'scale(1)',
-                  display:'flex', alignItems:'center',
-                }}
-                aria-label="Publicar">
-                <IcoSend />
+            <header style={{
+              display:'flex', alignItems:'center', justifyContent:'space-between',
+              padding:'14px 18px', borderBottom:'1px solid var(--surface-2)',
+              flexShrink:0,
+            }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontFamily:'var(--f-display)', fontSize:17, fontWeight:500, fontStyle:'italic', color:'var(--ink)' }}>
+                  Comentários
+                </span>
+                <span style={{ fontSize:11, fontWeight:600, color:'var(--ink-50)', background:'var(--surface-2)', padding:'2px 8px', borderRadius:10 }}>
+                  {comments.length}
+                </span>
+              </div>
+              <button onClick={isMobileModal ? () => setShowCommentsMobile(false) : onClose}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--ink-50)', padding:4, marginRight:-4 }}
+              >
+                <IcoClose />
               </button>
+            </header>
+
+            <div ref={listRef} className="photo-comment-list" style={{
+              flex:1, overflowY:'auto', padding:'0 18px',
+              display:'flex', flexDirection:'column',
+            }}>
+              {loading ? (
+                <div style={{ margin:'auto', color:'var(--ink-25)' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation:'lbSpin 1s linear infinite' }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                </div>
+              ) : comments.length === 0 ? (
+                <div style={{ margin:'auto', textAlign:'center', color:'var(--ink-25)', maxWidth:200 }}>
+                  <IcoHeart filled={false} />
+                  <p style={{ marginTop:12, fontSize:13, lineHeight:1.5 }}>Seja o primeiro a deixar uma memória nesta foto.</p>
+                </div>
+              ) : (
+                comments.map(c => (
+                  <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />
+                ))
+              )}
+            </div>
+
+            <div style={{ padding:'14px 18px', borderTop:'1px solid var(--surface-2)', background:'var(--white)', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <Avatar name={guestName} size={30} />
+                <input
+                  ref={inputRef}
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handlePost()}
+                  placeholder="Adicione um comentário…"
+                  disabled={posting}
+                  style={{
+                    flex:1, border:'none', background:'transparent',
+                    outline:'none', fontSize:13, color:'var(--ink)',
+                    fontFamily:'var(--f-ui)', padding:'8px 0',
+                  }}
+                />
+                <button onClick={handlePost} disabled={posting || !commentText.trim()}
+                  style={{
+                    background:'none', border:'none', cursor:'pointer', padding:4,
+                    color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)',
+                    transition:'color 0.15s, transform 0.15s',
+                    transform: posting ? 'scale(0.85)' : 'scale(1)',
+                    display:'flex', alignItems:'center',
+                  }}
+                  aria-label="Publicar">
+                  <IcoSend />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </motion.div>
 
-      <motion.p
-        initial={{ opacity:0 }}
-        animate={{ opacity:1 }}
-        transition={{ delay:0.8 }}
-        style={{
-          position:'fixed', bottom:18, left:'50%', transform:'translateX(-50%)',
-          fontSize:10, color:'rgba(255,255,255,0.22)',
-          letterSpacing:'0.12em', textTransform:'uppercase',
-          pointerEvents:'none', zIndex:9001, whiteSpace:'nowrap',
-        }}
-      >
-        esc · fechar — ← → · navegar
-      </motion.p>
+      {!isMobileModal && (
+        <motion.p
+          initial={{ opacity:0 }}
+          animate={{ opacity:1 }}
+          transition={{ delay:0.8 }}
+          style={{
+            position:'fixed', bottom:18, left:'50%', transform:'translateX(-50%)',
+            fontSize:10, color:'rgba(255,255,255,0.22)',
+            letterSpacing:'0.12em', textTransform:'uppercase',
+            pointerEvents:'none', zIndex:9001, whiteSpace:'nowrap',
+          }}
+        >
+          esc · fechar — ← → · navegar
+        </motion.p>
+      )}
 
-      <style>{`
-        @keyframes lbSpin { to { transform:rotate(360deg); } }
-        .lb-nav-btn {
-          position:absolute; top:50%; transform:translateY(-50%); zIndex:3;
-          width:42px; height:42px; borderRadius:50%;
-          background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15);
-          color:#fff; display:flex; alignItems:center; justifyContent:center;
-          cursor:pointer; backdropFilter:blur(8px); transition:0.2s;
-        }
-        .lb-nav-btn:hover { background:rgba(255,255,255,0.25); transform:translateY(-50%) scale(1.08); }
-        .lb-nav-left { left: 14px; }
-        .lb-nav-right { right: 14px; }
-      `}</style>
+      <style>{`@keyframes lbSpin { to { transform:rotate(360deg); } }`}</style>
     </motion.div>
   );
 }

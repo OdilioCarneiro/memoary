@@ -135,19 +135,33 @@ html, body, #root {
 /* ─────────────────────────────────────────────────────────
    APP SHELL
 ───────────────────────────────────────────────────────── */
-.app-container { width: 100%; position: relative; }
+.app-container {
+  width: 100%;
+  position: relative;
+  background-color: #CCC3B3;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
 /* Hero: pinned by GSAP ScrollTrigger */
 .viewport-hero {
   width: 100%;
   height: 100vh;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   align-items: center;
   background: var(--surface-0);
-  /* Subtle noise grain via SVG filter */
   isolation: isolate;
+}
+
+/* Clip only the grain/radial layers, not the nav */
+.viewport-hero > .viewport-hero-bg-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Grain overlay */
@@ -307,6 +321,7 @@ html, body, #root {
 .book-outer {
   position: relative;
   transform-style: preserve-3d;
+  overflow: visible;
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -978,100 +993,163 @@ input[placeholder="Adicione um comentário…"]::placeholder {
 }
 
 /* ─────────────────────────────────────────────────────────
-   RESPONSIVE
+   RESPONSIVE — sistema completo por breakpoints
 ───────────────────────────────────────────────────────── */
+
+/* ── Laptops pequenos / tablets landscape (≤ 1280px) ── */
+@media (max-width: 1280px) {
+  .fixed-header { padding: 0 36px; }
+  .hero-text-panel { width: 42vw; left: 7vw; }
+}
+
+/* ── Tablets portrait / laptops 13" (≤ 1024px) ── */
 @media (max-width: 1024px) {
-  .hero-text-panel { width: 46vw; }
+  .fixed-header { padding: 0 28px; }
+  .hero-text-panel { width: 46vw; left: 6vw; }
+  .hero-headline { font-size: clamp(2.4rem, 3.6vw, 3.6rem); }
+  .scroll-cue { left: 32px; bottom: 32px; }
 }
 
-@media (max-width: 860px) {
-  .hero-text-panel { width: 90%; left: 5%; top: 8%; position: absolute; }
-  .hero-headline { font-size: 2.6rem; }
-  .scroll-cue { display: none; }
-  .fixed-header { padding: 0 24px; }
-}
-
-@media (max-width: 480px) {
-  .hero-headline { font-size: 2.1rem; }
-  .nav-btn span { display: none; }
-  .nav-btn { padding: 0 14px; }
-}
-
-/* ─────────────────────────────────────────────────────────
-   RESPONSIVE & GLOBAL LAYOUT
-───────────────────────────────────────────────────────── */
-/* Fundo escurecido para dar contraste ao livro branco */
-.app-container {
-  background-color: #CCC3B3; /* Tom de areia/vintage elegante */
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Telas de Portáteis/Tablets Grandes */
-@media (max-width: 1024px) {
-  .hero-text-panel { width: 46vw; }
-}
-
-/* Tablets e Telemóveis (Unificado para 899px para bater certo com o GSAP do App.jsx) */
+/* ── Tablets portrait e telas < 900px ── */
 @media (max-width: 899px) {
-  /* Centraliza o texto "Slogan" do lado de fora do livro perfeitamente */
+  /* Livro centralizado, texto acima */
   .hero-text-panel {
     position: absolute;
-    top: 10%;
+    top: 7%;
     left: 50%;
     transform: translateX(-50%);
-    width: 90vw;
+    width: 88vw;
+    max-width: 520px;
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
-    z-index: 10;
   }
 
-  .hero-headline {
-    font-size: 2.4rem;
-    line-height: 1.2;
-    text-align: center;
+  .hero-eyebrow { margin-bottom: 10px; }
+  .hero-headline { font-size: clamp(2rem, 5.5vw, 2.8rem); line-height: 1.1; }
+  .hero-logo-lock { margin-top: 12px; }
+
+  /* Scroll cue esconde para poupar espaço */
+  .scroll-cue { display: none; }
+
+  /* Header mais compacto */
+  .fixed-header { padding: 0 20px; height: 56px; }
+  .logo-header { height: 22px; }
+
+  /* Nav do livro centralizado e com mais espaço tátil */
+  .book-nav { gap: 12px; }
+
+  /* Admin bar empilha em 2 linhas se necessário */
+  .admin-bar { padding: 0 16px; flex-wrap: wrap; gap: 8px; height: auto; min-height: 52px; }
+  .admin-bar-sep { display: none; }
+  .admin-bar-title { font-size: 12px; }
+}
+
+/* ── Celulares (≤ 600px) ── */
+@media (max-width: 600px) {
+  .hero-headline { font-size: clamp(1.75rem, 6vw, 2.4rem); }
+  .hero-eyebrow { font-size: 9.5px; }
+
+  /* Botões de nav: esconde texto, deixa só ícone */
+  .nav-btn span { display: none; }
+  .nav-btn {
+    padding: 0 14px;
+    height: 44px;
+    border-radius: 22px;
+  }
+  .nav-counter { font-size: 12px; min-width: 52px; }
+
+  /* Header ainda mais compacto */
+  .fixed-header { padding: 0 16px; height: 52px; }
+  .btn-login { padding: 0 16px; height: 30px; font-size: 12px; }
+
+  /* Admin bar */
+  .admin-bar { gap: 6px; }
+  .admin-bar-title { display: none; }
+}
+
+/* ── Celulares muito pequenos (≤ 380px) ── */
+@media (max-width: 380px) {
+  .hero-headline { font-size: 1.6rem; }
+  .nav-btn { padding: 0 12px; height: 40px; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   ADMIN PAGE — responsividade específica
+───────────────────────────────────────────────────────── */
+
+/* Painel admin: em telas pequenas o layout 3 colunas vira 1 coluna */
+@media (max-width: 860px) {
+  /* AdminPage usa layout flex de 3 colunas (sidebar | canvas | props)
+     Em tablets ficamos com sidebar colapsável + canvas full */
+  .admin-layout {
+    flex-direction: column !important;
   }
 
-  .hero-eyebrow {
-    margin-bottom: 8px;
+  /* Sidebar de páginas vira uma barra horizontal rolável */
+  .admin-sidebar-pages {
+    width: 100% !important;
+    height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--surface-2) !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    flex-shrink: 0 !important;
+    padding: 12px 12px !important;
+    gap: 10px !important;
+    align-items: stretch !important;
   }
 
-  .hero-logo-lock {
-    margin: 10px auto 0; /* Centraliza a logo debaixo do texto */
+  /* O botão nova página fica inline com as páginas */
+  .admin-sidebar-pages .admin-new-page-btn {
+    flex-shrink: 0 !important;
+    width: 80px !important;
+    min-height: 80px !important;
+    padding: 0 !important;
+    align-self: stretch !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 22px !important;
   }
 
-  .scroll-cue { 
-    display: none; /* Esconde a dica de scroll para poupar espaço no telemóvel */
+  /* Cada item de página fica como card vertical compacto */
+  .admin-sidebar-pages .admin-page-item {
+    flex-shrink: 0 !important;
+    width: 80px !important;
+    padding: 8px !important;
   }
 
-  .fixed-header { 
-    padding: 0 20px; 
+  .admin-sidebar-pages .admin-page-item-preview {
+    height: 60px !important;
+    margin-bottom: 6px !important;
   }
 
-  /* Ajusta a barra de botões "Anterior/Próxima" para o centro */
-  .book-nav {
-    gap: 15px;
-    width: 100%;
-    justify-content: center;
+  /* Painel de propriedades some em mobile (usar modal em vez de sidebar) */
+  .admin-sidebar-props {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--surface-2) !important;
+    max-height: 260px !important;
+    overflow-y: auto !important;
   }
 }
 
-/* Telemóveis Pequenos */
-@media (max-width: 480px) {
-  .hero-headline { 
-    font-size: 2rem; 
+@media (max-width: 540px) {
+  /* Canvas central: não fazer scroll horizontal, deixar o canvas escalado */
+  .admin-canvas-area {
+    padding: 20px 12px 60px !important;
   }
-  
-  /* Esconde a palavra "Anterior/Próxima" e deixa só a setinha para caber no ecrã */
-  .nav-btn span { 
-    display: none; 
+
+  .admin-toolbar {
+    padding: 10px 14px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
   }
-  
-  .nav-btn { 
-    padding: 0 16px; /* Botões mais largos para ser fácil clicar com o dedo */
-    height: 48px;
-    border-radius: 24px;
+
+  .admin-toolbar .toolbar-spacer {
+    display: none !important;
   }
 }
