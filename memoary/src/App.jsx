@@ -277,12 +277,6 @@ function BookViewer({ onLoginClick, pages }) {
     tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
   }, { scope: containerRef, dependencies: [] });
 
-  /* ── drag ── */
-  const onDragEnd = (_, info) => {
-    if (!bookIsOpen || isFlipping) return;
-    if (info.offset.x < -65) flipForward();
-    else if (info.offset.x > 65) flipBackward();
-  };
 
   /* ── counter ── */
   const counterLabel = useMemo(() => {
@@ -364,16 +358,6 @@ function BookViewer({ onLoginClick, pages }) {
                 </div>
               </div>
             </div>
-
-            {bookIsOpen && (
-              <motion.div
-                className="drag-zone"
-                drag="x"
-                dragConstraints={{ left:0, right:0 }}
-                dragElastic={0.05}
-                onDragEnd={onDragEnd}
-              />
-            )}
 
             {bookIsOpen && (
               <nav className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
@@ -593,35 +577,35 @@ function EmptyPage({ isFirst = false }) {
 }
 
 /* ══════════════════════════════════════════════
-   7.  AVATAR (Anti Tela-Branca)
+   7.  AVATAR (100% Anti-Crash)
 ══════════════════════════════════════════════ */
-const PALETTES = [
-  ['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],
-  ['#e8d5e5','#5c1a4e'],['#e8e4d5','#5c4e1a'],['#d5e8e8','#1a4e4e'],
-  ['#ead5d5','#5c1a1a'],['#e5d5e8','#451a5c'],
-];
+const PALETTES = [['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],['#e8d5e5','#5c1a4e'],['#e8e4d5','#5c4e1a'],['#d5e8e8','#1a4e4e'],['#ead5d5','#5c1a1a'],['#e5d5e8','#451a5c']];
 
 function Avatar({ name, size = 32 }) {
-  // Correção do Bug: Valida se "name" tem texto antes de calcular a cor
-  const charCode = name && name.length > 0 ? name.charCodeAt(0) : 0;
-  const idx = (isNaN(charCode) ? 0 : charCode) % PALETTES.length;
+  // 1. Garante que o nome sempre seja um texto válido
+  const safeName = (name && name.trim() !== '') ? name : 'Visitante';
   
-  const [bg, fg] = PALETTES[idx];
-  const initials = (name || 'A').split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
+  // 2. Faz a matemática de forma segura
+  const charCode = safeName.charCodeAt(0) || 0;
+  const idx = isNaN(charCode) ? 0 : (charCode % PALETTES.length);
+  
+  // 3. Trava de segurança: Se 'idx' bugar, usa a paleta 0 em vez de explodir o React (undefined)
+  const palette = PALETTES[idx] || PALETTES[0]; 
+  const bg = palette[0];
+  const fg = palette[1];
+  
+  const initials = safeName.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
   
   return (
-    <div style={{
-      width:size, height:size, borderRadius:'50%',
-      background:bg, color:fg, flexShrink:0,
-      display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize:size * 0.37, fontWeight:600, fontFamily:'var(--f-ui)',
-      letterSpacing:'0.01em', userSelect:'none',
+    <div style={{ 
+      width:size, height:size, borderRadius:'50%', background:bg, color:fg, 
+      flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', 
+      fontSize:size * 0.37, fontWeight:600, fontFamily:'var(--f-ui)', userSelect:'none' 
     }}>
       {initials}
     </div>
   );
 }
-
 /* ══════════════════════════════════════════════
    8.  COMMENTS HOOK
 ══════════════════════════════════════════════ */
@@ -810,7 +794,7 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
   };
 
   const totalLikes = comments.reduce((a,c) => a+(c.likes??0), 0);
-
+  if (!cur || !cur.url) return null;
   return (
     /* ── Backdrop ── */
     <motion.div
