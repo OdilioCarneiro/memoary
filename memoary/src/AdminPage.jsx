@@ -15,30 +15,8 @@ const CANVAS_W = 420;
 const CANVAS_H = 660;
 
 /* =====================================================
-   COMPONENTES DE ÍCONES VETORIAIS (PADRÃO APPLE)
+   ADMIN PAGE
    ===================================================== */
-const IconPlus = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 1v12M1 7h12"/></svg>
-);
-const IconImage = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-);
-const IconSave = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-);
-const IconTrash = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-);
-const IconBook = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5v-15z"/></svg>
-);
-const IconEye = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-);
-const IconLogOut = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-);
-
 export default function AdminPage() {
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,10 +27,9 @@ export default function AdminPage() {
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3200);
   }, []);
 
-  /* ---------- Carregar Páginas ---------- */
   useEffect(() => {
     async function load() {
       try {
@@ -69,7 +46,6 @@ export default function AdminPage() {
     load();
   }, [showToast]);
 
-  /* ---------- Nova Página ---------- */
   const handleNovaPagina = async () => {
     try {
       const res = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
@@ -81,32 +57,25 @@ export default function AdminPage() {
         showToast('Página criada com sucesso');
       }
     } catch (e) {
-      console.error(e);
-      showToast('Erro ao criar página', 'error');
+      showToast('Erro ao criar página', 'error', {e});
     }
   };
 
-  /* ---------- Excluir Página ---------- */
   const handleExcluirPagina = async (id) => {
-    if (!window.confirm('Deseja excluir esta página permanentemente?')) return;
+    if (!window.confirm('Remover esta página permanentemente?')) return;
     try {
       const res = await fetch(`${API_URL}/api/anuario/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         setPages(p => p.filter(x => x._id !== id));
-        if (activePage?._id === id) { 
-          setActivePage(null); 
-          setSelectedId(null); 
-        }
-        showToast('Página excluída');
+        if (activePage?._id === id) { setActivePage(null); setSelectedId(null); }
+        showToast('Página removida');
       }
     } catch (e) {
-      console.error(e);
-      showToast('Erro ao excluir página', 'error');
+      showToast('Erro ao excluir', 'error', {e});
     }
   };
 
-  /* ---------- Salvar Página ---------- */
   const salvarPagina = async () => {
     if (!activePage || isSaving) return;
     setIsSaving(true);
@@ -117,365 +86,370 @@ export default function AdminPage() {
         body: JSON.stringify({ elementos: activePage.elementos }),
       });
       const json = await res.json();
-      if (json.success) showToast('Alterações salvas no banco de dados');
-      else showToast('Erro ao salvar no servidor', 'error');
+      if (json.success) showToast('Alterações salvas');
+      else showToast('Erro ao salvar', 'error');
     } catch (e) {
-      console.error(e);
-      showToast('Erro de conexão com o servidor', 'error');
+      showToast('Erro de conexão', 'error', {e});
     } finally {
       setIsSaving(false);
     }
   };
 
-  /* ---------- Upload Puro para o Cloudinary ---------- */
-  const handleUploadArquivo = async (e, elId) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      showToast('Enviando arquivo para o Cloudinary...', 'success');
-      const res = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const json = await res.json();
-      
-      if (json.success) {
-        updateEl(elId, { url: json.url });
-        showToast('Mídia vinculada com sucesso');
-      } else {
-        showToast('Erro ao processar mídia no servidor', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Falha crítica na comunicação de mídia', 'error');
-    }
-  };
-
-  /* ---------- Botões Globais de Navegação ---------- */
-  const handleVisualizarAnuario = () => {
-    window.open('/', '_blank');
-  };
-
-  const handleSairPainel = () => {
-    if (window.confirm('Deseja realmente sair do painel administrativo?')) {
-      localStorage.removeItem('token-super-secreto-do-memoary');
-      window.location.href = '/login';
-    }
-  };
-
-  /* ---------- Manipuladores de Estado do Canvas ---------- */
   const updateActiveLocal = useCallback((newElements) => {
-    setActivePage(prev => {
-      if (!prev) return null;
-      const updated = { ...prev, elementos: newElements };
-      setPages(p => p.map(x => x._id === updated._id ? updated : x));
-      return updated;
-    });
-  }, []);
+    const updated = { ...activePage, elementos: newElements };
+    setActivePage(updated);
+    setPages(p => p.map(x => x._id === updated._id ? updated : x));
+  }, [activePage]);
 
   const addPhoto = () => {
-    if (!activePage) return;
     const el = {
       id: gerarId(), tipo: 'imagem',
-      url: '', x: 70, y: 80,
-      largura: 280, altura: 210, legenda: ''
+      url: '', x: 60, y: 60,
+      largura: 280, altura: 200, legenda: ''
     };
     updateActiveLocal([...(activePage.elementos || []), el]);
     setSelectedId(el.id);
   };
 
   const updateEl = (id, data) => {
-    if (!activePage) return;
     updateActiveLocal(activePage.elementos.map(e => e.id === id ? { ...e, ...data } : e));
   };
 
   const removeEl = (id) => {
-    if (!activePage) return;
     updateActiveLocal(activePage.elementos.filter(e => e.id !== id));
     setSelectedId(null);
   };
 
   const selectedEl = activePage?.elementos?.find(e => e.id === selectedId) || null;
 
+  /* ===================================================
+     LOADING
+     =================================================== */
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f5f5f7', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-        <div style={{ textAlign: 'center', color: '#86868b' }}>
-          <div className="spinner" style={{ marginBottom: 16 }}></div>
-          <p style={{ fontSize: 14, fontWeight: 500, letterSpacing: '-0.01em' }}>Carregando ecossistema de design...</p>
+      <div className="admin-loading">
+        <div className="admin-loading__inner">
+          <div className="admin-loading__spinner" />
+          <span className="admin-loading__text">Carregando editor</span>
         </div>
       </div>
     );
   }
 
+  /* ===================================================
+     RENDER PRINCIPAL
+     =================================================== */
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', background: '#f5f5f7', overflow: 'hidden', color: '#1d1d1f' }}>
-      
-      {/* ===== NOTIFICAÇÃO (TOAST) ===== */}
+    <div className="admin-root">
+
+      {/* TOAST */}
       {toast && (
-        <div style={{
-          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(29, 29, 31, 0.96)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          color: '#ffffff', padding: '10px 24px', borderRadius: '24px', zIndex: 9999,
-          fontWeight: 500, fontSize: 13, boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
-          animation: 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 8
-        }}>
-          {toast.type === 'error' && <span style={{ color: '#ff453a' }}>●</span>}
-          {toast.type === 'success' && <span style={{ color: 'var(--cor-destaque)' }}>●</span>}
+        <div className={`admin-toast admin-toast--${toast.type}`}>
           {toast.msg}
         </div>
       )}
 
-      {/* ===== BARRA LATERAL ESQUERDA ===== */}
-      <aside style={{ width: 280, background: '#ffffff', borderRight: '1px solid #e8e8ed', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '24px 24px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.01em' }}>Estrutura do Livro</h2>
-          <p style={{ fontSize: 12, color: '#86868b' }}>{pages.length} {pages.length === 1 ? 'página catalogada' : 'páginas catalogadas'}</p>
+      {/* SIDEBAR — LISTA DE PÁGINAS */}
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar__header">
+          <h2 className="admin-sidebar__title">Anuário</h2>
+          <p className="admin-sidebar__subtitle">
+            {pages.length} {pages.length === 1 ? 'página' : 'páginas'}
+          </p>
         </div>
 
-        <div style={{ padding: '0 24px 16px' }}>
-          <button onClick={handleNovaPagina} className="apple-btn-primary">
-            <IconPlus /> Adicionar Página
+        <div className="admin-sidebar__actions">
+          <button className="admin-btn-new" onClick={handleNovaPagina}>
+            <span className="admin-btn-new__icon">+</span>
+            Nova Página
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 24px', display: 'flex', flexDirection: 'column', gap: 6 }} className="custom-scrollbar">
-          {pages.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#86868b', fontSize: 13, marginTop: 40, fontStyle: 'italic' }}>Nenhuma página gerada</p>
-          ) : (
-            pages.map((page, idx) => {
-              const isActive = activePage?._id === page._id;
-              return (
-                <div key={page._id}
-                  onClick={() => { setActivePage(page); setSelectedId(null); }}
-                  className={`sidebar-page-item ${isActive ? 'active' : ''}`}
-                  style={{
-                    padding: '10px 12px', borderRadius: '10px', cursor: 'pointer', position: 'relative',
-                    transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 12,
-                    background: isActive ? '#f5f5f7' : 'transparent',
-                    border: '1px solid ' + (isActive ? '#e8e8ed' : 'transparent')
-                  }}
-                >
-                  <div style={{ width: 44, height: 58, background: '#f5f5f7', borderRadius: '4px', overflow: 'hidden', position: 'relative', border: '1px solid #e8e8ed', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', flexShrink: 0 }}>
-                    {page.elementos?.filter(e => e.tipo === 'imagem' && e.url).slice(0, 3).map((el, eIdx) => (
-                      <img key={el.id} src={el.url} alt=""
-                        style={{
-                          position: 'absolute',
-                          left: `${(el.x / CANVAS_W) * 100}%`,
-                          top: `${(el.y / CANVAS_H) * 100}%`,
-                          width: `${(el.largura / CANVAS_W) * 100}%`,
-                          height: `${(el.altura / CANVAS_H) * 100}%`,
-                          objectFit: 'cover',
-                          opacity: 1 - (eIdx * 0.2)
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', minWidth: 0 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <span style={{ fontWeight: isActive ? 600 : 500, fontSize: 13, color: '#1d1d1f', display: 'block' }}>Página {idx + 1}</span>
-                      <span style={{ fontSize: 11, color: '#86868b', display: 'block', textTransform: 'lowercase', marginTop: 1 }}>
-                        {page.elementos?.length || 0} {page.elementos?.length === 1 ? 'elemento' : 'elementos'}
-                      </span>
-                    </div>
-                    <button onClick={e => { e.stopPropagation(); handleExcluirPagina(page._id); }} className="btn-icon-delete" title="Remover página">
-                      <IconTrash />
-                    </button>
-                  </div>
-                </div>
-              )
-            })
+        <div className="admin-sidebar__list">
+          {pages.length === 0 && (
+            <p className="admin-sidebar__empty">
+              Nenhuma página ainda.<br />
+              Crie a primeira para começar.
+            </p>
           )}
+
+          {pages.map((page, idx) => {
+            const isActive = activePage?._id === page._id;
+            return (
+              <div
+                key={page._id}
+                className={`admin-page-card${isActive ? ' admin-page-card--active' : ''}`}
+                onClick={() => { setActivePage(page); setSelectedId(null); }}
+              >
+                {/* Miniatura */}
+                <div className="admin-page-card__thumb">
+                  {page.elementos?.filter(e => e.tipo === 'imagem' && e.url).slice(0, 4).map(el => (
+                    <img
+                      key={el.id}
+                      src={el.url}
+                      alt=""
+                      className="admin-page-card__thumb-img"
+                      style={{
+                        left: `${(el.x / CANVAS_W) * 100}%`,
+                        top: `${(el.y / CANVAS_H) * 100}%`,
+                        width: `${(el.largura / CANVAS_W) * 100}%`,
+                        height: `${(el.altura / CANVAS_H) * 100}%`,
+                      }}
+                    />
+                  ))}
+                  {(!page.elementos || page.elementos.length === 0) && (
+                    <div className="admin-page-card__thumb-empty">
+                      <div className="admin-page-card__thumb-empty-line" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="admin-page-card__meta">
+                  <div>
+                    <span className="admin-page-card__label">Página {idx + 1}</span>
+                    <span className="admin-page-card__count">
+                      {page.elementos?.length || 0} {(page.elementos?.length !== 1) ? 'fotos' : 'foto'}
+                    </span>
+                  </div>
+                  <button
+                    className="admin-page-card__delete"
+                    onClick={e => { e.stopPropagation(); handleExcluirPagina(page._id); }}
+                    title="Remover página"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </aside>
 
-      {/* ===== ÁREA CENTRAL ===== */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f5f5f7', overflow: 'hidden' }}>
+      {/* CANVAS CENTRAL */}
+      <main className="admin-canvas">
         {activePage ? (
           <>
-            {/* Top Sub-Bar (Sub-menu com ações principais integradas à direita) */}
-            <div style={{ height: 52, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid #e8e8ed', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 12, zIndex: 10 }}>
-              <button onClick={addPhoto} className="apple-btn-secondary">
-                <IconImage /> Inserir Mídia
+            {/* Toolbar */}
+            <div className="admin-toolbar">
+              <button className="admin-btn admin-btn--primary" onClick={addPhoto}>
+                Adicionar Foto
               </button>
-              
-              <div style={{ flex: 1 }} />
-              
-              <button onClick={handleVisualizarAnuario} className="apple-btn-nav">
-                <IconEye /> Visualizar Anuário
-              </button>
-
-              <button onClick={salvarPagina} disabled={isSaving} className="apple-btn-action" style={{ background: isSaving ? '#e8e8ed' : 'var(--cor-destaque)', color: '#ffffff' }}>
-                <IconSave /> {isSaving ? 'Sincronizando...' : 'Salvar no Banco'}
-              </button>
-
-              <div style={{ width: '1px', height: '20px', background: '#e8e8ed', margin: '0 4px' }} />
-
-              <button onClick={handleSairPainel} className="apple-btn-exit">
-                <IconLogOut /> Sair
+              <div className="admin-toolbar__spacer" />
+              <span className="admin-toolbar__info">
+                {activePage.elementos?.length || 0} elemento{activePage.elementos?.length !== 1 ? 's' : ''}
+              </span>
+              <button className="admin-btn admin-btn--save" onClick={salvarPagina} disabled={isSaving}>
+                {isSaving ? 'Salvando…' : 'Salvar'}
               </button>
             </div>
 
-            {/* Espaço do Canvas */}
-            <div style={{ flex: 1, overflow: 'auto', padding: '48px 24px 80px', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="custom-scrollbar">
+            {/* Scroll area */}
+            <div className="admin-canvas__scroll">
+              {/* O Palco */}
               <div
+                className="admin-stage"
+                style={{ width: CANVAS_W, height: CANVAS_H }}
                 onClick={() => setSelectedId(null)}
-                style={{
-                  width: CANVAS_W, height: CANVAS_H,
-                  background: '#ffffff',
-                  boxShadow: '0 30px 70px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)',
-                  position: 'relative', overflow: 'hidden',
-                  borderRadius: '4px 12px 12px 4px',
-                  backgroundImage: 'linear-gradient(to right, #eaeaea 0%, #fcfcfc 2%, #ffffff 6%, #ffffff 100%)',
-                  cursor: 'default', flexShrink: 0,
-                }}
               >
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 24, background: 'linear-gradient(to right, rgba(0,0,0,0.04), rgba(0,0,0,0.01) 60%, transparent)', pointerEvents: 'none', zIndex: 3 }} />
-                <div style={{ position: 'absolute', inset: '28px', border: '1px dashed #e8e8ed', borderRadius: 2, pointerEvents: 'none', zIndex: 2 }} />
+                <div className="admin-stage__spine-shadow" />
+                <div className="admin-stage__guide" />
 
                 {(!activePage.elementos || activePage.elementos.length === 0) && (
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, pointerEvents: 'none', padding: 40 }}>
-                    <div style={{ color: '#86868b', opacity: 0.6 }}><IconImage /></div>
-                    <p style={{ fontSize: 13, color: '#86868b', textAlign: 'center', lineHeight: 1.6, maxWidth: 220 }}>
-                      Página vazia. Selecione "Inserir Mídia" para iniciar a composição.
+                  <div className="admin-stage__empty">
+                    <div className="admin-stage__empty-icon">
+                      <div className="admin-stage__empty-dot" />
+                    </div>
+                    <p className="admin-stage__empty-text">
+                      Clique em "Adicionar Foto"<br />para montar a página
                     </p>
                   </div>
                 )}
 
-                {activePage.elementos?.map(el => {
-                  const isSelected = selectedId === el.id;
-                  return (
-                    <Rnd
-                      key={el.id}
-                      bounds="parent"
-                      size={{ width: el.largura, height: el.altura }}
-                      position={{ x: el.x, y: el.y }}
-                      onDragStop={(_, d) => updateEl(el.id, { x: d.x, y: d.y })}
-                      onResizeStop={(_, __, ref, ___, pos) => updateEl(el.id, {
-                        largura: ref.offsetWidth,
-                        altura: ref.offsetHeight,
-                        ...pos,
-                      })}
-                      onClick={e => { e.stopPropagation(); setSelectedId(el.id); }}
-                      style={{
-                        border: isSelected ? '2px solid var(--cor-destaque)' : '1px solid rgba(0,0,0,0.06)',
-                        cursor: 'move',
-                        boxShadow: isSelected ? '0 8px 24px rgba(200,170,105,0.25)' : '0 4px 12px rgba(0,0,0,0.04)',
-                        borderRadius: 4, transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-                        background: '#ffffff', overflow: 'hidden'
-                      }}
-                    >
-                      {el.url ? (
-                        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                          <img src={el.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }} draggable={false} />
+                {/* ELEMENTOS ARRASTÁVEIS */}
+                {activePage.elementos?.map(el => (
+                  <Rnd
+                    key={el.id}
+                    bounds="parent"
+                    size={{ width: el.largura, height: el.altura }}
+                    position={{ x: el.x, y: el.y }}
+                    onDragStop={(_, d) => updateEl(el.id, { x: d.x, y: d.y })}
+                    onResizeStop={(_, __, ref, ___, pos) => updateEl(el.id, {
+                      largura: parseInt(ref.style.width),
+                      altura: parseInt(ref.style.height),
+                      ...pos,
+                    })}
+                    onClick={e => { e.stopPropagation(); setSelectedId(el.id); }}
+                    style={{
+                      border: selectedId === el.id
+                        ? '2px solid #C8AA69'
+                        : '2px solid transparent',
+                      cursor: 'move',
+                      boxShadow: selectedId === el.id
+                        ? '0 0 0 4px rgba(200,170,105,0.18)'
+                        : 'none',
+                      borderRadius: 4,
+                      transition: 'box-shadow 0.15s, border-color 0.15s',
+                    }}
+                  >
+                    {el.url ? (
+                      <img
+                        src={el.url}
+                        alt="Foto"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 2, pointerEvents: 'none' }}
+                        draggable={false}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%',
+                        background: '#f0ece0',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexDirection: 'column', gap: 8, borderRadius: 2,
+                        border: '1.5px dashed rgba(200,170,105,0.35)',
+                      }}>
+                        <div style={{
+                          width: 24, height: 24, borderRadius: '50%',
+                          border: '1.5px solid rgba(200,170,105,0.4)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(200,170,105,0.4)' }} />
                         </div>
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', background: '#f5f5f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, padding: 12 }}>
-                          <div style={{ color: '#86868b', opacity: 0.5 }}><IconImage /></div>
-                          <span style={{ fontSize: 11, color: '#86868b', textAlign: 'center', lineHeight: 1.4 }}>Carregue uma imagem nas propriedades ao lado.</span>
-                        </div>
-                      )}
-                      {el.legenda && (
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', padding: '6px 8px', fontSize: 10, color: '#1d1d1f', textAlign: 'center', borderTop: '1px solid rgba(0,0,0,0.05)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {el.legenda}
-                        </div>
-                      )}
-                    </Rnd>
-                  );
-                })}
+                        <span style={{ fontSize: 10, color: '#b0ab9e', textAlign: 'center', padding: '0 8px', lineHeight: 1.4, letterSpacing: '0.03em' }}>
+                          Cole a URL no painel lateral
+                        </span>
+                      </div>
+                    )}
+                    {el.legenda && (
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        background: 'rgba(255,255,255,0.9)',
+                        padding: '5px 8px',
+                        fontSize: 10,
+                        fontFamily: "'Cormorant Garamond', serif",
+                        color: 'rgba(50,42,24,0.7)',
+                        textAlign: 'center',
+                        letterSpacing: '0.04em',
+                      }}>
+                        {el.legenda}
+                      </div>
+                    )}
+                  </Rnd>
+                ))}
               </div>
 
-              <p style={{ marginTop: 24, fontSize: 11, color: '#86868b', letterSpacing: '0.04em', fontWeight: 500, textTransform: 'uppercase' }}>
-                Dimensão real: {CANVAS_W} × {CANVAS_H} px — Formato Editorial A5
+              <p className="admin-stage__caption">
+                {CANVAS_W} × {CANVAS_H} px — Proporção A5
               </p>
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: '#86868b' }}>
-            <IconBook />
-            <p style={{ fontSize: 14, textAlign: 'center', color: '#86868b' }}>
-              Selecione uma página no painel esquerdo ou crie um layout do zero.
+          <div className="admin-canvas__placeholder">
+            <div className="admin-canvas__placeholder-icon">
+              <div className="admin-canvas__placeholder-line" />
+            </div>
+            <p className="admin-canvas__placeholder-text">
+              Selecione uma página na barra lateral
+              <span>ou crie uma nova para começar</span>
             </p>
           </div>
         )}
       </main>
 
-      {/* ===== BARRA LATERAL DIREITA ===== */}
-      <aside style={{ width: 300, background: '#ffffff', borderLeft: '1px solid #e8e8ed', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e8e8ed' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.01em' }}>
-            {selectedEl ? 'Inspetor de Elemento' : 'Configurações Globais'}
+      {/* PAINEL DE PROPRIEDADES */}
+      <aside className="admin-properties">
+        <div className="admin-properties__header">
+          <h3 className="admin-properties__title">
+            {selectedEl ? 'Propriedades' : 'Propriedades'}
           </h3>
         </div>
 
-        <div style={{ flex: 1, padding: 24, overflowY: 'auto' }} className="custom-scrollbar">
+        <div className="admin-properties__body">
           {selectedEl ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              
+            <div className="admin-field">
+              {/* Preview */}
               {selectedEl.url && (
-                <div style={{ width: '100%', height: 130, borderRadius: '6px', overflow: 'hidden', background: '#f5f5f7', border: '1px solid #e8e8ed' }}>
-                  <img src={selectedEl.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div className="admin-preview">
+                  <img src={selectedEl.url} alt="" />
                 </div>
               )}
 
-              <div className="input-field-group">
-                <label className="apple-label">Mídia do Elemento</label>
-                <div style={{ position: 'relative', marginBottom: '8px' }}>
-                  <label className="apple-btn-secondary" style={{ cursor: 'pointer' }}>
-                    <IconImage /> Carregar foto do dispositivo
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleUploadArquivo(e, selectedEl.id)} />
-                  </label>
-                </div>
-                <input type="text" placeholder="Ou cole uma URL externa aqui..." value={selectedEl.url} onChange={e => updateEl(selectedEl.id, { url: e.target.value })} className="apple-input" />
+              {/* URL */}
+              <div className="admin-field-group">
+                <label className="admin-label">URL da Imagem</label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  placeholder="https://..."
+                  value={selectedEl.url}
+                  onChange={e => updateEl(selectedEl.id, { url: e.target.value })}
+                />
               </div>
 
-              <div className="input-field-group">
-                <label className="apple-label">Legenda Descritiva</label>
-                <input type="text" placeholder="Insira o texto da legenda..." value={selectedEl.legenda || ''} onChange={e => updateEl(selectedEl.id, { legenda: e.target.value })} className="apple-input" />
+              {/* Legenda */}
+              <div className="admin-field-group">
+                <label className="admin-label">Legenda</label>
+                <input
+                  type="text"
+                  className="admin-input"
+                  placeholder="Ex: Formatura 2024"
+                  value={selectedEl.legenda || ''}
+                  onChange={e => updateEl(selectedEl.id, { legenda: e.target.value })}
+                />
               </div>
 
-              <div className="input-field-group">
-                <label className="apple-label">Geometria e Coordenadas (px)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 12px' }}>
+              <div className="admin-divider" />
+
+              {/* Posição & Tamanho */}
+              <div className="admin-field-group">
+                <label className="admin-label">Posição & Tamanho</label>
+                <div className="admin-grid-2">
                   {[
-                    { label: 'Eixo X', key: 'x' },
-                    { label: 'Eixo Y', key: 'y' },
+                    { label: 'X', key: 'x' },
+                    { label: 'Y', key: 'y' },
                     { label: 'Largura', key: 'largura' },
                     { label: 'Altura', key: 'altura' },
                   ].map(({ label, key }) => (
-                    <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span style={{ fontSize: 11, color: '#86868b' }}>{label}</span>
-                      <input type="number" value={Math.round(selectedEl[key])} onChange={e => updateEl(selectedEl.id, { [key]: Number(e.target.value) })} className="apple-input" />
+                    <div key={key}>
+                      <span className="admin-grid-label">{label}</span>
+                      <input
+                        type="number"
+                        className="admin-input admin-input--number"
+                        value={Math.round(selectedEl[key])}
+                        onChange={e => updateEl(selectedEl.id, { [key]: Number(e.target.value) })}
+                      />
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                <button onClick={() => updateEl(selectedEl.id, { x: 0, y: 0, largura: CANVAS_W, altura: CANVAS_H })} className="apple-btn-secondary" style={{ flex: 1, fontSize: 12, padding: '8px' }}>
-                  Preencher Total
+              {/* Ações rápidas */}
+              <div className="admin-quick-actions">
+                <button
+                  className="admin-btn-quick"
+                  onClick={() => updateEl(selectedEl.id, { x: 0, y: 0, largura: CANVAS_W, altura: CANVAS_H })}
+                >
+                  Página Inteira
                 </button>
-                <button onClick={() => updateEl(selectedEl.id, { x: Math.max(0, Math.floor((CANVAS_W - selectedEl.largura) / 2)), y: Math.max(0, Math.floor((CANVAS_H - selectedEl.altura) / 2)) })} className="apple-btn-secondary" style={{ flex: 1, fontSize: 12, padding: '8px' }}>
+                <button
+                  className="admin-btn-quick"
+                  onClick={() => updateEl(selectedEl.id, {
+                    x: Math.max(0, Math.floor((CANVAS_W - selectedEl.largura) / 2)),
+                    y: Math.max(0, Math.floor((CANVAS_H - selectedEl.altura) / 2))
+                  })}
+                >
                   Centralizar
                 </button>
               </div>
 
-              <div style={{ height: '1px', background: '#e8e8ed', marginTop: 8 }} />
+              <div className="admin-divider" />
 
-              <button onClick={() => removeEl(selectedEl.id)} className="apple-btn-danger">
-                <IconTrash /> Remover Elemento
+              <button className="admin-btn-delete" onClick={() => removeEl(selectedEl.id)}>
+                Remover Foto
               </button>
             </div>
           ) : (
-            <div style={{ textAlign: 'center', color: '#86868b', marginTop: 60, fontSize: 13, lineHeight: 1.6 }}>
-              Selecione qualquer elemento posicionado no palco central para inspecionar e alterar suas diretrizes de estilo.
-            </div>
+            <p className="admin-properties__empty">
+              Selecione um elemento no palco para editar suas propriedades
+            </p>
           )}
         </div>
       </aside>
