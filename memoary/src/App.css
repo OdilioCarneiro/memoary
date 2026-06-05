@@ -226,7 +226,7 @@ html, body, #root {
 
 .hero-logo-lock {
   display: block;
-  height: 30px;
+  height: 100px;
   opacity: 0.7;
 }
 
