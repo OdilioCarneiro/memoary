@@ -161,20 +161,18 @@ function BookViewer({ onLoginClick, pages }) {
 
   // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
   // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
-  const [bookScale, setBookScale] = useState(1); // <-- CORRIGIDO AQUI
-
+  const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
     const updateScale = () => {
-      // O livro aberto tem ~860px. Usamos 920 para dar margem de respiro.
-      const scaleW = window.innerWidth / 920; 
-      const scaleH = window.innerHeight / 850; // Respiro para caber os botões
-      const newScale = Math.min(scaleW, scaleH, 1); // Nunca aumenta mais que 100%
+      const scaleW = window.innerWidth / 1000;
+      const scaleH = window.innerHeight / 1100; 
+      const newScale = Math.min(scaleW, scaleH, 1.2); 
       setBookScale(newScale);
     };
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, []); // <-- CORRIGIDO AQUI (Adicionado o array vazio)
+  }, []);
 
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
@@ -235,7 +233,7 @@ function BookViewer({ onLoginClick, pages }) {
   }, [flipState, getSpread]);
 
   // 🔥 2. ANIMAÇÕES SEPARADAS POR TAMANHO DE TELA E SOMBRAS MAIS FORTES
-  useGSAP(() => {
+ useGSAP(() => {
     let mm = gsap.matchMedia();
 
     const onUpdateShared = (self) => {
@@ -245,7 +243,6 @@ function BookViewer({ onLoginClick, pages }) {
       headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
       
       if (bookOuterRef.current) {
-        // 🔥 Aqui escurecemos a sombra para o livro descolar do fundo do site
         bookOuterRef.current.style.boxShadow = opened
           ? '-35px 35px 65px rgba(15, 10, 5, 0.45)' 
           : '-15px 15px 35px rgba(15, 10, 5, 0.35)';
@@ -254,21 +251,22 @@ function BookViewer({ onLoginClick, pages }) {
 
     // Animação para Telas Grandes (Computador)
     mm.add("(min-width: 900px)", () => {
-      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'71%', top:'50%', rotationY:-20, rotationZ:-5, scale: 0.8 });
+      // Começa um pouco mais alto (top: 45%)
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'71%', top:'45%', rotationY:-20, rotationZ:-5, scale: 0.8 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, x:-70, duration:0.4, ease:'power2.in' }, 0);
-      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      // 🔥 Quando o livro abre e vai pro centro, ele sobe para 44% (sobrando muito espaço embaixo)
+      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
     // Animação para Telas Pequenas (Celular e Tablet)
     mm.add("(max-width: 899px)", () => {
-      // Livro começa no centro, mas mais para baixo, e sobe para ficar exatamente no meio
-      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'62%', rotationY:-15, rotationZ:-3, scale: 0.85 });
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'55%', rotationY:-15, rotationZ:-3, scale: 0.85 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=2500', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
-      // Texto do Hero some subindo para não bugar os lados
       tl.to(heroRef.current, { opacity:0, y:-50, duration:0.4, ease:'power2.in' }, 0);
-      tl.to(bookSceneRef.current, { top:'50%', left:'50%', xPercent:-50, rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      // 🔥 No celular, ele também trava no 44% para sobrar espaço pros botões
+      tl.to(bookSceneRef.current, { top:'44%', left:'50%', xPercent:-50, rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
