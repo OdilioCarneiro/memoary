@@ -226,7 +226,7 @@ html, body, #root {
 
 .hero-logo-lock {
   display: block;
-  height: 100px;
+  height: 30px;
   opacity: 0.7;
 }
 
@@ -902,6 +902,79 @@ html, body, #root {
 @keyframes toastSlide {
   from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0);     }
+}
+
+/* ─────────────────────────────────────────────────────────
+   PHOTO THUMBNAIL  (inside book pages)
+───────────────────────────────────────────────────────── */
+.photo-thumb {
+  transition: box-shadow 0.22s var(--ease-expo-out), transform 0.22s var(--ease-expo-out);
+}
+
+.photo-thumb:hover {
+  box-shadow:
+    0 8px 28px rgba(24, 21, 14, 0.22),
+    0 2px 8px rgba(24, 21, 14, 0.12);
+  transform: scale(1.022);
+  z-index: 10 !important;
+}
+
+.photo-thumb-img {
+  transition: filter 0.22s ease;
+}
+
+.photo-thumb:hover .photo-thumb-img {
+  filter: brightness(0.84);
+}
+
+/* Zoom hint overlay */
+.photo-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 7, 3, 0);
+  transition: background 0.22s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.photo-thumb:hover .photo-thumb-overlay {
+  background: rgba(10, 7, 3, 0.28);
+}
+
+.photo-thumb-overlay svg {
+  opacity: 0;
+  transform: scale(0.75);
+  transition: opacity 0.22s ease, transform 0.22s var(--ease-spring);
+}
+
+.photo-thumb:hover .photo-thumb-overlay svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ─────────────────────────────────────────────────────────
+   PHOTO MODAL — custom scrollbar for comment list
+───────────────────────────────────────────────────────── */
+
+/* Comment list scroll */
+.photo-comment-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-2) transparent;
+}
+.photo-comment-list::-webkit-scrollbar { width: 4px; }
+.photo-comment-list::-webkit-scrollbar-track { background: transparent; }
+.photo-comment-list::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: 4px;
+}
+
+/* Comment input placeholder */
+input[placeholder="Adicione um comentário…"]::placeholder {
+  color: var(--ink-25);
+  font-style: italic;
 }
 
 /* ─────────────────────────────────────────────────────────
