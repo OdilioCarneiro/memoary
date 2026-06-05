@@ -391,14 +391,16 @@ function BookViewer({ onLoginClick, pages }) {
 }
 
 /* ══════════════════════════════════════════════
-   3.  STATIC SPREAD
+   3.  STATIC SPREAD (Fix do Vidro Invisível)
 ══════════════════════════════════════════════ */
 function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
   const isFirst = spreadIdx < 0;
   return (
     <>
-      <div className="static-page" style={{ zIndex }}>
-        <div className="page-face page-face--right">
+      {/* PÁGINA DA DIREITA */}
+      {/* A caixa por fora ignora o clique (none), o papel por dentro aceita (auto) */}
+      <div className="static-page" style={{ zIndex, pointerEvents: 'none' }}>
+        <div className="page-face page-face--right" style={{ pointerEvents: 'auto' }}>
           {right ? <PageContent page={right} onPhotoClick={onPhotoClick} />
                  : <EmptyPage isFirst={isFirst} />}
           <div className="page-rule" />
@@ -406,9 +408,11 @@ function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
             <span className="page-folio page-folio--right">{spreadIdx*2+2}</span>}
         </div>
       </div>
+
+      {/* PÁGINA DA ESQUERDA */}
       {spreadIdx >= 0 && (
-        <div className="static-page" style={{ zIndex }}>
-          <div className="page-face page-face--left">
+        <div className="static-page" style={{ zIndex, pointerEvents: 'none' }}>
+          <div className="page-face page-face--left" style={{ pointerEvents: 'auto' }}>
             {left ? <PageContent page={left} onPhotoClick={onPhotoClick} />
                   : <EmptyPage />}
             <div className="page-rule" />
