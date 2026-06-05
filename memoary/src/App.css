@@ -998,16 +998,29 @@ input[placeholder="Adicione um comentário…"]::placeholder {
 }
 
 /* ─────────────────────────────────────────────────────────
-   CORREÇÃO EXTREMA DE RESPONSIVIDADE (MOBILE & TABLET)
+   RESPONSIVE & GLOBAL LAYOUT
 ───────────────────────────────────────────────────────── */
+/* Fundo escurecido para dar contraste ao livro branco */
+.app-container {
+  background-color: #CCC3B3; /* Tom de areia/vintage elegante */
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Telas de Portáteis/Tablets Grandes */
+@media (max-width: 1024px) {
+  .hero-text-panel { width: 46vw; }
+}
+
+/* Tablets e Telemóveis (Unificado para 899px para bater certo com o GSAP do App.jsx) */
 @media (max-width: 899px) {
-  /* Centraliza o texto "Slogan" do lado de fora do livro */
+  /* Centraliza o texto "Slogan" do lado de fora do livro perfeitamente */
   .hero-text-panel {
     position: absolute;
-    top: 12% !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: 90vw !important;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1016,7 +1029,7 @@ input[placeholder="Adicione um comentário…"]::placeholder {
   }
 
   .hero-headline {
-    font-size: 2.4rem !important; /* Diminui a fonte no celular */
+    font-size: 2.4rem;
     line-height: 1.2;
     text-align: center;
   }
@@ -1026,13 +1039,39 @@ input[placeholder="Adicione um comentário…"]::placeholder {
   }
 
   .hero-logo-lock {
-    margin: 10px auto 0 !important; /* Centraliza a logo debaixo do texto */
+    margin: 10px auto 0; /* Centraliza a logo debaixo do texto */
   }
 
-  /* Ajusta a barra de botões "Anterior/Próxima" para não vazar */
+  .scroll-cue { 
+    display: none; /* Esconde a dica de scroll para poupar espaço no telemóvel */
+  }
+
+  .fixed-header { 
+    padding: 0 20px; 
+  }
+
+  /* Ajusta a barra de botões "Anterior/Próxima" para o centro */
   .book-nav {
     gap: 15px;
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Telemóveis Pequenos */
+@media (max-width: 480px) {
+  .hero-headline { 
+    font-size: 2rem; 
+  }
+  
+  /* Esconde a palavra "Anterior/Próxima" e deixa só a setinha para caber no ecrã */
+  .nav-btn span { 
+    display: none; 
+  }
+  
+  .nav-btn { 
+    padding: 0 16px; /* Botões mais largos para ser fácil clicar com o dedo */
+    height: 48px;
+    border-radius: 24px;
   }
 }
