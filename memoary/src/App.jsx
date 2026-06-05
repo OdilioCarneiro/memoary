@@ -160,7 +160,9 @@ function BookViewer({ onLoginClick, pages }) {
   const [photoModal,  setPhotoModal]  = useState(null);
 
   // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
-  const [ setBookScale] = useState(1);
+  // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
+  const [bookScale, setBookScale] = useState(1); // <-- CORRIGIDO AQUI
+
   useEffect(() => {
     const updateScale = () => {
       // O livro aberto tem ~860px. Usamos 920 para dar margem de respiro.
@@ -172,7 +174,7 @@ function BookViewer({ onLoginClick, pages }) {
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  });
+  }, []); // <-- CORRIGIDO AQUI (Adicionado o array vazio)
 
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
@@ -302,8 +304,9 @@ function BookViewer({ onLoginClick, pages }) {
           <div className="scroll-cue-track" />
           <span className="scroll-cue-label">Role para explorar</span>
         </div>
-
+         
         <div ref={bookSceneRef} className="book-scene" style={{ perspective: PERSP }}>
+          <div style={{ transform: `scale(${bookScale})`, transformOrigin: 'center center' }}></div>
           <div ref={bookOuterRef} className="book-outer"
             style={{
               width:BOOK_W, height:BOOK_H,
