@@ -257,10 +257,12 @@ function BookViewer({ onLoginClick, pages }) {
           setBookIsOpen(p => p === opened ? p : opened);
           scrollCueRef.current?.classList.toggle('is-hidden', self.progress > 0.04);
           headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
+          
           if (bookOuterRef.current) {
-            bookOuterRef.current.style.filter = opened
-              ? 'drop-shadow(0 70px 50px rgba(20,14,5,0.42)) drop-shadow(0 18px 18px rgba(20,14,5,0.2))'
-              : 'drop-shadow(0 35px 25px rgba(20,14,5,0.38)) drop-shadow(0 8px 8px rgba(20,14,5,0.18))';
+            // 🔥 FIX: Trocamos 'filter' por 'boxShadow' para consertar o clique no Chrome/Safari!
+            bookOuterRef.current.style.boxShadow = opened
+              ? '-25px 25px 50px rgba(20,14,5,0.3)'
+              : '-10px 10px 20px rgba(20,14,5,0.2)';
           }
         },
       },
@@ -312,7 +314,8 @@ function BookViewer({ onLoginClick, pages }) {
             style={{
               width:BOOK_W, height:BOOK_H,
               transformStyle:'preserve-3d', position:'relative',
-              filter:'drop-shadow(0 35px 25px rgba(20,14,5,0.38))',
+              boxShadow:'-10px 10px 20px rgba(20,14,5,0.2)', /* 🔥 Sombra 3D segura */
+              transition:'box-shadow 0.6s ease'
             }}>
 
             <div className="book-spine"     style={{ width:SPINE_W, height:BOOK_H, left:0 }} />
@@ -391,35 +394,31 @@ function BookViewer({ onLoginClick, pages }) {
 }
 
 /* ══════════════════════════════════════════════
-   3.  STATIC SPREAD (Fix do Vidro Invisível)
+   3.  STATIC SPREAD (Corrigido a ordem das camadas)
 ══════════════════════════════════════════════ */
 function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
   const isFirst = spreadIdx < 0;
   return (
     <>
-      {/* PÁGINA DA DIREITA */}
-      {/* A caixa por fora ignora o clique (none), o papel por dentro aceita (auto) */}
-      <div className="static-page" style={{ zIndex, pointerEvents: 'none' }}>
-        <div className="page-face page-face--right" style={{ pointerEvents: 'auto' }}>
-          {right ? <PageContent page={right} onPhotoClick={onPhotoClick} />
-                 : <EmptyPage isFirst={isFirst} />}
-          <div className="page-rule" />
-          {spreadIdx >= 0 &&
-            <span className="page-folio page-folio--right">{spreadIdx*2+2}</span>}
-        </div>
-      </div>
-
-      {/* PÁGINA DA ESQUERDA */}
+      {/* 1º A ESQUERDA: É renderizada por baixo, sem invadir a aba da direita */}
       {spreadIdx >= 0 && (
-        <div className="static-page" style={{ zIndex, pointerEvents: 'none' }}>
-          <div className="page-face page-face--left" style={{ pointerEvents: 'auto' }}>
-            {left ? <PageContent page={left} onPhotoClick={onPhotoClick} />
-                  : <EmptyPage />}
+        <div className="static-page" style={{ zIndex }}>
+          <div className="page-face page-face--left">
+            {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
             <div className="page-rule" />
             <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
           </div>
         </div>
       )}
+
+      {/* 2º A DIREITA: Renderizada por último, fica sempre na frente e 100% clicável */}
+      <div className="static-page" style={{ zIndex }}>
+        <div className="page-face page-face--right">
+          {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={isFirst} />}
+          <div className="page-rule" />
+          {spreadIdx >= 0 && <span className="page-folio page-folio--right">{spreadIdx*2+2}</span>}
+        </div>
+      </div>
     </>
   );
 }
@@ -486,7 +485,7 @@ function FlipLeaf({
 }
 
 /* ══════════════════════════════════════════════
-   5.  PAGE CONTENT (Com Hover e Lupa Blindados)
+   5.  PAGE CONTENT (Restauração da Lupa CSS)
 ══════════════════════════════════════════════ */
 function PageContent({ page, onPhotoClick }) {
   if (!page?.elementos?.length) return <EmptyPage />;
@@ -495,69 +494,37 @@ function PageContent({ page, onPhotoClick }) {
       {page.elementos.map((el, i) => {
         if (el.tipo !== 'imagem' || !el.url) return null;
         return (
-          <motion.div
+          <div
             key={el.id ?? i}
-            initial="rest"
-            whileHover={onPhotoClick ? "hover" : "rest"}
+            className="photo-thumb"
             onClick={() => onPhotoClick?.(el)}
             style={{
-              position:'absolute',
-              left:   el.x       ?? 0,
-              top:    el.y       ?? 0,
-              width:  el.largura ?? 200,
-              height: el.altura  ?? 150,
+              position:'absolute', left: el.x ?? 0, top: el.y ?? 0,
+              width: el.largura ?? 200, height: el.altura ?? 150,
               overflow:'hidden', borderRadius:3,
               boxShadow:'0 2px 10px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.07)',
-              cursor: onPhotoClick ? 'pointer' : 'default',
-              pointerEvents: 'auto', // 🔥 Garante que a foto receba o mouse
-              zIndex: 10
+              cursor: onPhotoClick ? 'pointer' : 'default'
             }}
           >
-            <img
-              src={el.url}
-              alt={el.legenda ?? 'Foto do anuário'}
-              style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
-              loading="lazy"
-              draggable={false}
-            />
+            <img src={el.url} alt={el.legenda ?? 'Foto'} className="photo-thumb-img" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} loading="lazy" draggable={false} />
             
-            {/* Lupa overlay controlada pelo Framer Motion */}
             {onPhotoClick && (
-              <motion.div
-                variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  position: 'absolute', inset: 0,
-                  background: 'rgba(10, 7, 3, 0.35)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  pointerEvents: 'none', zIndex: 2
-                }}
-              >
-                <motion.svg 
-                  variants={{ rest: { scale: 0.75 }, hover: { scale: 1 } }}
-                  width="28" height="28" viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="photo-thumb-overlay">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   <line x1="11" y1="8" x2="11" y2="14"></line>
                   <line x1="8" y1="11" x2="14" y2="11"></line>
-                </motion.svg>
-              </motion.div>
+                </svg>
+              </div>
             )}
 
             {el.legenda && (
-              <figcaption style={{
-                position:'absolute', bottom:0, left:0, right:0,
-                background:'rgba(253,249,244,0.92)', backdropFilter:'blur(6px)',
-                padding:'5px 10px', fontSize:9,
-                fontFamily:'var(--f-display)', fontStyle:'italic',
-                letterSpacing:'0.04em', color:'var(--ink-50)', textAlign:'center',
-                zIndex: 3
-              }}>
+              <figcaption style={{ position:'absolute', bottom:0, left:0, right:0, background:'rgba(253,249,244,0.92)', backdropFilter:'blur(6px)', padding:'5px 10px', fontSize:9, fontFamily:'var(--f-display)', fontStyle:'italic', letterSpacing:'0.04em', color:'var(--ink-50)', textAlign:'center' }}>
                 {el.legenda}
               </figcaption>
             )}
-          </motion.div>
+          </div>
         );
       })}
     </div>
@@ -582,7 +549,7 @@ function EmptyPage({ isFirst = false }) {
 }
 
 /* ══════════════════════════════════════════════
-   7.  AVATAR (Totalmente Anti-Crash)
+   7.  AVATAR
 ══════════════════════════════════════════════ */
 const PALETTES = [
   ['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],
@@ -591,26 +558,18 @@ const PALETTES = [
 ];
 
 function Avatar({ name, size = 32 }) {
-  // 🔥 CORREÇÃO: Trava de segurança para nomes vazios vindos do banco de dados
   const safeName = (name && typeof name === 'string' && name.trim() !== '') ? name : 'Visitante';
-  
   const charCode = safeName.charCodeAt(0) || 0;
   const idx = isNaN(charCode) ? 0 : (charCode % PALETTES.length);
-  
   const palette = PALETTES[idx] || PALETTES[0];
-  const bg = palette[0];
-  const fg = palette[1];
   
-  const initials = safeName.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
   return (
     <div style={{
-      width:size, height:size, borderRadius:'50%',
-      background:bg, color:fg, flexShrink:0,
-      display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize:size * 0.37, fontWeight:600, fontFamily:'var(--f-ui)',
-      letterSpacing:'0.01em', userSelect:'none',
+      width:size, height:size, borderRadius:'50%', background:palette[0], color:palette[1],
+      flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize:size * 0.37, fontWeight:600, fontFamily:'var(--f-ui)', userSelect:'none'
     }}>
-      {initials}
+      {safeName.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('')}
     </div>
   );
 }
