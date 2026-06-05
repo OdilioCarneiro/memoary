@@ -143,7 +143,7 @@ export default function App() {
 }
 
 /* ══════════════════════════════════════════════
-   2.  BOOK VIEWER
+   2.  BOOK VIEWER (100% Responsivo e com Sombras Fortes)
 ══════════════════════════════════════════════ */
 function BookViewer({ onLoginClick, pages }) {
   const containerRef  = useRef(null);
@@ -159,7 +159,21 @@ function BookViewer({ onLoginClick, pages }) {
   const [flipState,   setFlipState]   = useState(null);
   const [photoModal,  setPhotoModal]  = useState(null);
 
-  /* ── spread helpers ── */
+  // 🔥 1. NOVA LÓGICA DE ESCALA RESPONSIVA
+  const [ setBookScale] = useState(1);
+  useEffect(() => {
+    const updateScale = () => {
+      // O livro aberto tem ~860px. Usamos 920 para dar margem de respiro.
+      const scaleW = window.innerWidth / 920; 
+      const scaleH = window.innerHeight / 850; // Respiro para caber os botões
+      const newScale = Math.min(scaleW, scaleH, 1); // Nunca aumenta mais que 100%
+      setBookScale(newScale);
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  });
+
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
 
@@ -171,7 +185,6 @@ function BookViewer({ onLoginClick, pages }) {
   const curSpread  = getSpread(spreadIdx);
   const isFlipping = flipState !== null;
 
-  /* ── flat photo list for lightbox navigation ── */
   const allPhotos = useMemo(() =>
     pages.flatMap(pg =>
       (pg.elementos ?? [])
@@ -187,9 +200,7 @@ function BookViewer({ onLoginClick, pages }) {
     });
   }, [allPhotos]);
 
-  /* ── flip motion values ── */
   const flipMV = useMotionValue(0);
-
   const foldProgress    = useTransform(flipMV, v => Math.sin((Math.abs(v)/180)*Math.PI));
   const creaseHighlight = useTransform(foldProgress, [0,.5,1], [0,.42,0]);
   const selfShadowFront = useTransform(foldProgress, [0,.65,1], [0,.38,.08]);
@@ -198,86 +209,69 @@ function BookViewer({ onLoginClick, pages }) {
   const castWidth       = useTransform(foldProgress, [0,1], ['0%','60%']);
   const leafRY          = flipMV;
 
-  /* ── flip forward ── */
   const flipForward = useCallback(() => {
     if (isFlipping || !bookIsOpen || spreadIdx >= maxSpreadIdx) return;
     const from = spreadIdx, to = spreadIdx + 1;
     setFlipState({ dir:'fwd', fromSpread:from, toSpread:to });
     flipMV.set(0);
-    animate(flipMV, -180, {
-      duration: 0.78,
-      ease: [0.4, 0.0, 0.2, 1.0],
-      onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
-    });
+    animate(flipMV, -180, { duration: 0.78, ease: [0.4, 0.0, 0.2, 1.0], onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); } });
   }, [isFlipping, bookIsOpen, spreadIdx, maxSpreadIdx, flipMV]);
 
-  /* ── flip backward ── */
   const flipBackward = useCallback(() => {
     if (isFlipping || !bookIsOpen || spreadIdx < 0) return;
     const from = spreadIdx, to = spreadIdx - 1;
     setFlipState({ dir:'bwd', fromSpread:from, toSpread:to });
     flipMV.set(0);
-    animate(flipMV, 180, {
-      duration: 0.78,
-      ease: [0.4, 0.0, 0.2, 1.0],
-      onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
-    });
+    animate(flipMV, 180, { duration: 0.78, ease: [0.4, 0.0, 0.2, 1.0], onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); } });
   }, [isFlipping, bookIsOpen, spreadIdx, flipMV]);
 
-  /* ── visible pages during flip ── */
   const flipVisible = useMemo(() => {
     if (!flipState) return null;
     const { dir, fromSpread, toSpread } = flipState;
-    const from = getSpread(fromSpread);
-    const to   = getSpread(toSpread);
-    return {
-      bgLeft:    to.left,
-      bgRight:   to.right,
-      leafFront: dir === 'fwd' ? from.right : from.left,
-      leafBack:  dir === 'fwd' ? to.left    : to.right,
-      dir,
-    };
+    const from = getSpread(fromSpread); const to = getSpread(toSpread);
+    return { bgLeft: to.left, bgRight: to.right, leafFront: dir === 'fwd' ? from.right : from.left, leafBack: dir === 'fwd' ? to.left : to.right, dir };
   }, [flipState, getSpread]);
 
-  /* ── GSAP scroll ── */
+  // 🔥 2. ANIMAÇÕES SEPARADAS POR TAMANHO DE TELA E SOMBRAS MAIS FORTES
   useGSAP(() => {
-    gsap.set(bookSceneRef.current, {
-      xPercent:-50, yPercent:-50,
-      left:'71%', top:'50%',
-      rotationY:-20, rotationZ:-5, scale:0.8,
+    let mm = gsap.matchMedia();
+
+    const onUpdateShared = (self) => {
+      const opened = self.progress > 0.62;
+      setBookIsOpen(p => p === opened ? p : opened);
+      scrollCueRef.current?.classList.toggle('is-hidden', self.progress > 0.04);
+      headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
+      
+      if (bookOuterRef.current) {
+        // 🔥 Aqui escurecemos a sombra para o livro descolar do fundo do site
+        bookOuterRef.current.style.boxShadow = opened
+          ? '-35px 35px 65px rgba(15, 10, 5, 0.45)' 
+          : '-15px 15px 35px rgba(15, 10, 5, 0.35)';
+      }
+    };
+
+    // Animação para Telas Grandes (Computador)
+    mm.add("(min-width: 900px)", () => {
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'71%', top:'50%', rotationY:-20, rotationZ:-5, scale: 0.8 });
+      const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
+      tl.to(heroRef.current, { opacity:0, x:-70, duration:0.4, ease:'power2.in' }, 0);
+      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.viewport-hero',
-        start:'top top', end:'+=3000',
-        scrub:1.5, pin:true,
-        onUpdate(self) {
-          const opened = self.progress > 0.62;
-          setBookIsOpen(p => p === opened ? p : opened);
-          scrollCueRef.current?.classList.toggle('is-hidden', self.progress > 0.04);
-          headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
-          
-          if (bookOuterRef.current) {
-            // 🔥 FIX: Trocamos 'filter' por 'boxShadow' para consertar o clique no Chrome/Safari!
-            bookOuterRef.current.style.boxShadow = opened
-              ? '-25px 25px 50px rgba(20,14,5,0.3)'
-              : '-10px 10px 20px rgba(20,14,5,0.2)';
-          }
-        },
-      },
+    // Animação para Telas Pequenas (Celular e Tablet)
+    mm.add("(max-width: 899px)", () => {
+      // Livro começa no centro, mas mais para baixo, e sobe para ficar exatamente no meio
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'62%', rotationY:-15, rotationZ:-3, scale: 0.85 });
+      const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=2500', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
+      // Texto do Hero some subindo para não bugar os lados
+      tl.to(heroRef.current, { opacity:0, y:-50, duration:0.4, ease:'power2.in' }, 0);
+      tl.to(bookSceneRef.current, { top:'50%', left:'50%', xPercent:-50, rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
-    tl.to(heroRef.current,    { opacity:0, x:-70, duration:0.4, ease:'power2.in' }, 0);
-    tl.to(bookSceneRef.current, {
-      left:'50%', xPercent:-50,
-      rotationY:0, rotationZ:0, scale:1,
-      duration:1, ease:'expo.inOut',
-    }, 0.08);
-    tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
   }, { scope: containerRef, dependencies: [] });
 
-  /* ── counter ── */
   const counterLabel = useMemo(() => {
     if (spreadIdx < 0) return 'Capa';
     const lo = spreadIdx * 2 + 1;
@@ -483,9 +477,8 @@ function FlipLeaf({
     </>
   );
 }
-
 /* ══════════════════════════════════════════════
-   5.  PAGE CONTENT (Restauração da Lupa CSS)
+   5.  PAGE CONTENT (Fotos e Textos mais Vivos)
 ══════════════════════════════════════════════ */
 function PageContent({ page, onPhotoClick }) {
   if (!page?.elementos?.length) return <EmptyPage />;
@@ -494,37 +487,51 @@ function PageContent({ page, onPhotoClick }) {
       {page.elementos.map((el, i) => {
         if (el.tipo !== 'imagem' || !el.url) return null;
         return (
-          <div
+          <motion.div
             key={el.id ?? i}
-            className="photo-thumb"
+            initial="rest"
+            whileHover={onPhotoClick ? "hover" : "rest"}
             onClick={() => onPhotoClick?.(el)}
             style={{
               position:'absolute', left: el.x ?? 0, top: el.y ?? 0,
               width: el.largura ?? 200, height: el.altura ?? 150,
               overflow:'hidden', borderRadius:3,
-              boxShadow:'0 2px 10px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.07)',
-              cursor: onPhotoClick ? 'pointer' : 'default'
+              // 🔥 Sombra mais forte e borda delicada para as fotos brancas não sumirem
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow:'0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
+              cursor: onPhotoClick ? 'pointer' : 'default',
+              pointerEvents: 'auto', zIndex: 10
             }}
           >
-            <img src={el.url} alt={el.legenda ?? 'Foto'} className="photo-thumb-img" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} loading="lazy" draggable={false} />
+            <img src={el.url} alt={el.legenda ?? 'Foto do anuário'} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', backgroundColor:'#f5f5f5' }} loading="lazy" draggable={false} />
             
             {onPhotoClick && (
-              <div className="photo-thumb-overlay">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <motion.div variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }} transition={{ duration: 0.2 }}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(10, 7, 3, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 2 }}>
+                <motion.svg variants={{ rest: { scale: 0.75 }, hover: { scale: 1 } }} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   <line x1="11" y1="8" x2="11" y2="14"></line>
                   <line x1="8" y1="11" x2="14" y2="11"></line>
-                </svg>
-              </div>
+                </motion.svg>
+              </motion.div>
             )}
 
             {el.legenda && (
-              <figcaption style={{ position:'absolute', bottom:0, left:0, right:0, background:'rgba(253,249,244,0.92)', backdropFilter:'blur(6px)', padding:'5px 10px', fontSize:9, fontFamily:'var(--f-display)', fontStyle:'italic', letterSpacing:'0.04em', color:'var(--ink-50)', textAlign:'center' }}>
+              <figcaption style={{ 
+                position:'absolute', bottom:0, left:0, right:0, 
+                background:'rgba(253,249,244,0.96)', backdropFilter:'blur(8px)', 
+                padding:'6px 10px', fontSize:10, 
+                fontFamily:'var(--f-display)', fontStyle:'italic', 
+                letterSpacing:'0.04em', 
+                color:'#222', // 🔥 Texto bem escuro para legibilidade perfeita
+                fontWeight: 500, // Deixa a fonte levemente mais gordinha
+                textAlign:'center', zIndex: 3 
+              }}>
                 {el.legenda}
               </figcaption>
             )}
-          </div>
+          </motion.div>
         );
       })}
     </div>

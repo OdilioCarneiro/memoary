@@ -996,3 +996,43 @@ input[placeholder="Adicione um comentário…"]::placeholder {
   .nav-btn span { display: none; }
   .nav-btn { padding: 0 14px; }
 }
+
+/* ─────────────────────────────────────────────────────────
+   CORREÇÃO EXTREMA DE RESPONSIVIDADE (MOBILE & TABLET)
+───────────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+  /* Centraliza o texto "Slogan" do lado de fora do livro */
+  .hero-text-panel {
+    position: absolute;
+    top: 12% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 90vw !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+  }
+
+  .hero-headline {
+    font-size: 2.4rem !important; /* Diminui a fonte no celular */
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .hero-logo-lock {
+    margin: 10px auto 0 !important; /* Centraliza a logo debaixo do texto */
+  }
+
+  /* Ajusta a barra de botões "Anterior/Próxima" para não vazar */
+  .book-nav {
+    gap: 15px;
+    width: 100%;
+    justify-content: center;
+  }
+}
