@@ -498,7 +498,7 @@ function FlipLeaf({
 }
 
 /* ══════════════════════════════════════════════
-   5.  PAGE CONTENT
+   5.  PAGE CONTENT (Com Efeito Lupa Corrigido)
 ══════════════════════════════════════════════ */
 function PageContent({ page, onPhotoClick }) {
   if (!page?.elementos?.length) return <EmptyPage />;
@@ -507,9 +507,10 @@ function PageContent({ page, onPhotoClick }) {
       {page.elementos.map((el, i) => {
         if (el.tipo !== 'imagem' || !el.url) return null;
         return (
-          <div
+          <motion.div
             key={el.id ?? i}
-            className="photo-thumb"
+            initial="rest"
+            whileHover={onPhotoClick ? "hover" : "rest"}
             onClick={() => onPhotoClick?.(el)}
             style={{
               position:'absolute',
@@ -520,27 +521,41 @@ function PageContent({ page, onPhotoClick }) {
               overflow:'hidden', borderRadius:3,
               boxShadow:'0 2px 10px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.07)',
               cursor: onPhotoClick ? 'pointer' : 'default',
+              zIndex: 1
             }}
           >
             <img
               src={el.url}
               alt={el.legenda ?? 'Foto do anuário'}
-              className="photo-thumb-img"
               style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
               loading="lazy"
               draggable={false}
             />
-            {/* Hover overlay — magnify hint */}
+            
+            {/* Lupa overlay 100% blindada via framer-motion */}
             {onPhotoClick && (
-              <div className="photo-thumb-overlay">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                  stroke="rgba(255,255,255,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="9" r="6"/>
-                  <path d="M13.5 13.5 17 17"/>
-                  <path d="M6 9h6M9 6v6"/>
-                </svg>
-              </div>
+              <motion.div
+                variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(10, 7, 3, 0.35)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  pointerEvents: 'none', zIndex: 2
+                }}
+              >
+                <motion.svg 
+                  variants={{ rest: { scale: 0.75 }, hover: { scale: 1 } }}
+                  width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <line x1="11" y1="8" x2="11" y2="14"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </motion.svg>
+              </motion.div>
             )}
+
             {el.legenda && (
               <figcaption style={{
                 position:'absolute', bottom:0, left:0, right:0,
@@ -548,11 +563,12 @@ function PageContent({ page, onPhotoClick }) {
                 padding:'5px 10px', fontSize:9,
                 fontFamily:'var(--f-display)', fontStyle:'italic',
                 letterSpacing:'0.04em', color:'var(--ink-50)', textAlign:'center',
+                zIndex: 10
               }}>
                 {el.legenda}
               </figcaption>
             )}
-          </div>
+          </motion.div>
         );
       })}
     </div>
@@ -577,7 +593,7 @@ function EmptyPage({ isFirst = false }) {
 }
 
 /* ══════════════════════════════════════════════
-   7.  AVATAR
+   7.  AVATAR (Anti Tela-Branca)
 ══════════════════════════════════════════════ */
 const PALETTES = [
   ['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],
@@ -586,9 +602,13 @@ const PALETTES = [
 ];
 
 function Avatar({ name, size = 32 }) {
-  const idx = (name?.charCodeAt(0) ?? 0) % PALETTES.length;
+  // Correção do Bug: Valida se "name" tem texto antes de calcular a cor
+  const charCode = name && name.length > 0 ? name.charCodeAt(0) : 0;
+  const idx = (isNaN(charCode) ? 0 : charCode) % PALETTES.length;
+  
   const [bg, fg] = PALETTES[idx];
-  const initials = (name ?? 'A').split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
+  const initials = (name || 'A').split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
+  
   return (
     <div style={{
       width:size, height:size, borderRadius:'50%',
