@@ -64,15 +64,14 @@ const IcoHeart = ({ filled }) => (
     <path d="M8 13.5S1.5 9.5 1.5 5.5A3.5 3.5 0 0 1 8 3.2 3.5 3.5 0 0 1 14.5 5.5C14.5 9.5 8 13.5 8 13.5z"/>
   </svg>
 );
+
 const IcoNavLeft = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13 4 7 10l6 6"/>
   </svg>
 );
 const IcoNavRight = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M7 4l6 6-6 6"/>
   </svg>
 );
@@ -158,7 +157,6 @@ function BookViewer({ onLoginClick, pages }) {
   const [bookIsOpen,  setBookIsOpen]  = useState(false);
   const [spreadIdx,   setSpreadIdx]   = useState(-1);
   const [flipState,   setFlipState]   = useState(null);
-  // photoModal: { photo: {id,url,legenda}, allPhotos: [...] }
   const [photoModal,  setPhotoModal]  = useState(null);
 
   /* ── spread helpers ── */
@@ -277,7 +275,6 @@ function BookViewer({ onLoginClick, pages }) {
     tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
   }, { scope: containerRef, dependencies: [] });
 
-
   /* ── counter ── */
   const counterLabel = useMemo(() => {
     if (spreadIdx < 0) return 'Capa';
@@ -346,7 +343,8 @@ function BookViewer({ onLoginClick, pages }) {
               />
             )}
 
-            <div ref={coverRef} className="book-cover" style={{ transformStyle:'preserve-3d' }}>
+            {/* 🔥 CORREÇÃO: Quando aberto, a capa desativa o 'pointerEvents' para não bloquear a página esquerda */}
+            <div ref={coverRef} className="book-cover" style={{ transformStyle:'preserve-3d', pointerEvents: bookIsOpen ? 'none' : 'auto' }}>
               <div className="cover-face cover-face--front">
                 <img src={anuarioCapa} alt="Capa" className="cover-img" />
                 <div className="cover-emboss" />
@@ -358,6 +356,8 @@ function BookViewer({ onLoginClick, pages }) {
                 </div>
               </div>
             </div>
+
+            {/* 🔥 CORREÇÃO: "drag-zone" removida daqui para liberar os cliques! */}
 
             {bookIsOpen && (
               <nav className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
@@ -482,7 +482,7 @@ function FlipLeaf({
 }
 
 /* ══════════════════════════════════════════════
-   5.  PAGE CONTENT (Com Efeito Lupa Corrigido)
+   5.  PAGE CONTENT (Com Hover e Lupa Blindados)
 ══════════════════════════════════════════════ */
 function PageContent({ page, onPhotoClick }) {
   if (!page?.elementos?.length) return <EmptyPage />;
@@ -505,7 +505,8 @@ function PageContent({ page, onPhotoClick }) {
               overflow:'hidden', borderRadius:3,
               boxShadow:'0 2px 10px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.07)',
               cursor: onPhotoClick ? 'pointer' : 'default',
-              zIndex: 1
+              pointerEvents: 'auto', // 🔥 Garante que a foto receba o mouse
+              zIndex: 10
             }}
           >
             <img
@@ -516,7 +517,7 @@ function PageContent({ page, onPhotoClick }) {
               draggable={false}
             />
             
-            {/* Lupa overlay 100% blindada via framer-motion */}
+            {/* Lupa overlay controlada pelo Framer Motion */}
             {onPhotoClick && (
               <motion.div
                 variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
@@ -530,7 +531,7 @@ function PageContent({ page, onPhotoClick }) {
               >
                 <motion.svg 
                   variants={{ rest: { scale: 0.75 }, hover: { scale: 1 } }}
-                  width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  width="28" height="28" viewBox="0 0 24 24" fill="none"
                   stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -547,7 +548,7 @@ function PageContent({ page, onPhotoClick }) {
                 padding:'5px 10px', fontSize:9,
                 fontFamily:'var(--f-display)', fontStyle:'italic',
                 letterSpacing:'0.04em', color:'var(--ink-50)', textAlign:'center',
-                zIndex: 10
+                zIndex: 3
               }}>
                 {el.legenda}
               </figcaption>
@@ -577,35 +578,39 @@ function EmptyPage({ isFirst = false }) {
 }
 
 /* ══════════════════════════════════════════════
-   7.  AVATAR (100% Anti-Crash)
+   7.  AVATAR (Totalmente Anti-Crash)
 ══════════════════════════════════════════════ */
-const PALETTES = [['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],['#e8d5e5','#5c1a4e'],['#e8e4d5','#5c4e1a'],['#d5e8e8','#1a4e4e'],['#ead5d5','#5c1a1a'],['#e5d5e8','#451a5c']];
+const PALETTES = [
+  ['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],
+  ['#e8d5e5','#5c1a4e'],['#e8e4d5','#5c4e1a'],['#d5e8e8','#1a4e4e'],
+  ['#ead5d5','#5c1a1a'],['#e5d5e8','#451a5c'],
+];
 
 function Avatar({ name, size = 32 }) {
-  // 1. Garante que o nome sempre seja um texto válido
-  const safeName = (name && name.trim() !== '') ? name : 'Visitante';
+  // 🔥 CORREÇÃO: Trava de segurança para nomes vazios vindos do banco de dados
+  const safeName = (name && typeof name === 'string' && name.trim() !== '') ? name : 'Visitante';
   
-  // 2. Faz a matemática de forma segura
   const charCode = safeName.charCodeAt(0) || 0;
   const idx = isNaN(charCode) ? 0 : (charCode % PALETTES.length);
   
-  // 3. Trava de segurança: Se 'idx' bugar, usa a paleta 0 em vez de explodir o React (undefined)
-  const palette = PALETTES[idx] || PALETTES[0]; 
+  const palette = PALETTES[idx] || PALETTES[0];
   const bg = palette[0];
   const fg = palette[1];
   
   const initials = safeName.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
-  
   return (
-    <div style={{ 
-      width:size, height:size, borderRadius:'50%', background:bg, color:fg, 
-      flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', 
-      fontSize:size * 0.37, fontWeight:600, fontFamily:'var(--f-ui)', userSelect:'none' 
+    <div style={{
+      width:size, height:size, borderRadius:'50%',
+      background:bg, color:fg, flexShrink:0,
+      display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize:size * 0.37, fontWeight:600, fontFamily:'var(--f-ui)',
+      letterSpacing:'0.01em', userSelect:'none',
     }}>
       {initials}
     </div>
   );
 }
+
 /* ══════════════════════════════════════════════
    8.  COMMENTS HOOK
 ══════════════════════════════════════════════ */
@@ -706,11 +711,11 @@ function CommentRow({ c, liked, onLike }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <Avatar name={c.autor ?? 'Anon'} size={32} />
+      <Avatar name={c.autor} size={32} />
       <div style={{ flex:1, minWidth:0 }}>
-        <p style={{ fontSize:13, lineHeight:1.5, color:'var(--ink)' }}>
+        <p style={{ fontSize:13, lineHeight:1.5, color:'var(--ink)', margin:0 }}>
           <strong style={{ fontWeight:600, marginRight:5, letterSpacing:'-0.01em' }}>
-            {c.autor}
+            {c.autor || 'Visitante'}
           </strong>
           {c.texto}
         </p>
@@ -743,9 +748,9 @@ function CommentRow({ c, liked, onLike }) {
    11. PHOTO MODAL
 ══════════════════════════════════════════════ */
 function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
-  const [cur,         setCur]         = useState(initialPhoto);
-  const [imgLoaded,   setImgLoaded]   = useState(false);
-  const [commentText, setCommentText] = useState('');
+  const [cur,           setCur]         = useState(initialPhoto);
+  const [imgLoaded,     setImgLoaded]   = useState(false);
+  const [commentText,   setCommentText] = useState('');
   const inputRef = useRef(null);
   const listRef  = useRef(null);
 
@@ -766,7 +771,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     setCommentText('');
   }, [allPhotos]);
 
-  // Keyboard
   useEffect(() => {
     const h = (e) => {
       if (e.key === 'Escape')      onClose();
@@ -777,12 +781,10 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     return () => window.removeEventListener('keydown', h);
   }, [curIdx, goTo, onClose]);
 
-  // Scroll comments to bottom on new
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [comments.length]);
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -793,10 +795,11 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     if (ok) setCommentText('');
   };
 
-  const totalLikes = comments.reduce((a,c) => a+(c.likes??0), 0);
+
+
   if (!cur || !cur.url) return null;
+
   return (
-    /* ── Backdrop ── */
     <motion.div
       initial={{ opacity:0 }}
       animate={{ opacity:1 }}
@@ -810,7 +813,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
         padding:20,
       }}
     >
-      {/* ── Panel ── */}
       <motion.div
         initial={{ opacity:0, scale:0.95, y:16 }}
         animate={{ opacity:1, scale:1,    y:0  }}
@@ -827,8 +829,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
           boxShadow:'0 48px 120px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.35)',
         }}
       >
-
-        {/* ════ LEFT — Photo ════ */}
         <div style={{
           flex:'1 1 58%', minWidth:0,
           background:'#0d0a06',
@@ -836,7 +836,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
           display:'flex', alignItems:'center', justifyContent:'center',
           overflow:'hidden',
         }}>
-          {/* Blurred fill */}
           <div style={{
             position:'absolute', inset:0,
             backgroundImage:`url(${cur.url})`,
@@ -845,7 +844,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
             transform:'scale(1.12)',
           }} />
 
-          {/* Main image with smooth crossfade */}
           <motion.img
             key={cur.url}
             src={cur.url}
@@ -863,7 +861,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
             draggable={false}
           />
 
-          {/* Caption bar */}
           {cur.legenda && (
             <div style={{
               position:'absolute', bottom:0, left:0, right:0, zIndex:2,
@@ -873,187 +870,109 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
               <p style={{
                 fontFamily:'var(--f-display)', fontStyle:'italic',
                 fontSize:13, color:'rgba(255,255,255,0.8)',
-                letterSpacing:'0.035em', textAlign:'center',
+                letterSpacing:'0.035em', textAlign:'center', margin:0
               }}>
                 {cur.legenda}
               </p>
             </div>
           )}
 
-          {/* Arrow nav */}
           {hasPrev && (
-            <button onClick={() => goTo(curIdx-1)}
-              style={navArrowStyle('left')} aria-label="Foto anterior">
+            <button className="lb-nav-btn lb-nav-left" onClick={() => goTo(curIdx-1)}>
               <IcoNavLeft />
             </button>
           )}
           {hasNext && (
-            <button onClick={() => goTo(curIdx+1)}
-              style={navArrowStyle('right')} aria-label="Próxima foto">
+            <button className="lb-nav-btn lb-nav-right" onClick={() => goTo(curIdx+1)}>
               <IcoNavRight />
             </button>
           )}
-
-          {/* Counter */}
-          {allPhotos.length > 1 && (
-            <div style={{
-              position:'absolute', top:14, left:'50%', transform:'translateX(-50%)',
-              zIndex:3, background:'rgba(0,0,0,0.42)', backdropFilter:'blur(8px)',
-              borderRadius:20, padding:'3px 13px',
-              fontSize:11, fontWeight:500, color:'rgba(255,255,255,0.65)',
-              letterSpacing:'0.06em',
-            }}>
-              {curIdx+1} / {allPhotos.length}
-            </div>
-          )}
         </div>
 
-        {/* ════ RIGHT — Comments ════ */}
         <div style={{
-          flex:'0 0 340px', minWidth:0,
+          flex:'1 1 42%', minWidth:320,
           display:'flex', flexDirection:'column',
-          borderLeft:'1px solid var(--surface-2)',
+          background:'var(--surface-0)',
         }}>
-
-          {/* Header */}
-          <div style={{
-            padding:'13px 16px 11px',
-            borderBottom:'1px solid var(--surface-2)',
+          <header style={{
             display:'flex', alignItems:'center', justifyContent:'space-between',
-            flexShrink:0,
+            padding:'16px 20px', borderBottom:'1px solid var(--surface-2)',
           }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <Avatar name={guestName} size={30} />
-              <span style={{ fontSize:13, fontWeight:600, color:'var(--ink)', letterSpacing:'-0.01em' }}>
-                {guestName}
+              <span style={{ fontFamily:'var(--f-display)', fontSize:18, fontWeight:500, fontStyle:'italic', color:'var(--ink)' }}>
+                Comentários
+              </span>
+              <span style={{ fontSize:11, fontWeight:600, color:'var(--ink-50)', background:'var(--surface-2)', padding:'2px 8px', borderRadius:10 }}>
+                {comments.length}
               </span>
             </div>
             <button onClick={onClose}
               style={{
-                background:'none', border:'none', cursor:'pointer', padding:6,
-                borderRadius:7, color:'var(--ink-50)', display:'flex', alignItems:'center',
-                transition:'background 0.14s, color 0.14s',
+                background:'none', border:'none', cursor:'pointer',
+                color:'var(--ink-50)', padding:4, marginRight:-4,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background='var(--surface-1)'; e.currentTarget.style.color='var(--ink)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--ink-50)'; }}
-              aria-label="Fechar">
+            >
               <IcoClose />
             </button>
+          </header>
+
+          <div ref={listRef} className="photo-comment-list" style={{
+            flex:1, overflowY:'auto', padding:'0 20px',
+            display:'flex', flexDirection:'column',
+          }}>
+            {loading ? (
+              <div style={{ margin:'auto', color:'var(--ink-25)' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation:'lbSpin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+              </div>
+            ) : comments.length === 0 ? (
+              <div style={{ margin:'auto', textAlign:'center', color:'var(--ink-25)', maxWidth:200 }}>
+                <IcoHeart filled={false} />
+                <p style={{ marginTop:12, fontSize:13, lineHeight:1.5 }}>Seja o primeiro a deixar uma memória nesta foto.</p>
+              </div>
+            ) : (
+              comments.map(c => (
+                <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />
+              ))
+            )}
           </div>
 
-          {/* Comment list */}
-          <div ref={listRef} style={{ flex:1, overflowY:'auto', padding:'0 16px' }}>
-
-            {/* Caption as seed comment */}
-            {cur.legenda && (
-              <div style={{
-                display:'flex', gap:10, padding:'14px 0',
-                borderBottom:'1px solid var(--surface-2)',
-              }}>
-                <Avatar name="Memoary" size={32} />
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:13, lineHeight:1.5, color:'var(--ink)' }}>
-                    <strong style={{ fontWeight:600, marginRight:5 }}>Memoary</strong>
-                    {cur.legenda}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Spinner */}
-            {loading && (
-              <div style={{ padding:'36px 0', display:'flex', justifyContent:'center' }}>
-                <div style={{
-                  width:22, height:22, borderRadius:'50%',
-                  border:'2px solid var(--surface-2)', borderTopColor:'var(--gold)',
-                  animation:'lbSpin 0.8s linear infinite',
-                }} />
-              </div>
-            )}
-
-            {/* Empty state */}
-            {!loading && comments.length === 0 && (
-              <div style={{
-                padding:'52px 0 36px',
-                display:'flex', flexDirection:'column', alignItems:'center', gap:10,
-              }}>
-                <div style={{ width:32, height:1, background:'linear-gradient(90deg,transparent,var(--gold-muted),transparent)' }} />
-                <p style={{
-                  fontFamily:'var(--f-display)', fontStyle:'italic',
-                  fontSize:13, color:'var(--ink-25)', textAlign:'center', lineHeight:1.7,
-                }}>
-                  Seja o primeiro<br />a comentar.
-                </p>
-                <div style={{ width:32, height:1, background:'linear-gradient(90deg,transparent,var(--gold-muted),transparent)' }} />
-              </div>
-            )}
-
-            {/* Comments */}
-            {comments.map(c => (
-              <CommentRow
-                key={c._id}
-                c={c}
-                liked={!!likedMap[c._id]}
-                onLike={toggleLike}
+          <div style={{
+            padding:'16px 20px', borderTop:'1px solid var(--surface-2)',
+            background:'var(--white)',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <Avatar name={guestName} size={32} />
+              <input
+                ref={inputRef}
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handlePost()}
+                placeholder="Adicione um comentário…"
+                disabled={posting}
+                style={{
+                  flex:1, border:'none', background:'transparent',
+                  outline:'none', fontSize:13, color:'var(--ink)',
+                  fontFamily:'var(--f-ui)', padding:'8px 0',
+                }}
               />
-            ))}
-          </div>
-
-          {/* Likes count */}
-          <div style={{
-            padding:'10px 16px 0',
-            borderTop:'1px solid var(--surface-2)',
-            flexShrink:0,
-          }}>
-            {totalLikes > 0 && (
-              <p style={{ fontSize:13, fontWeight:600, color:'var(--ink)', marginBottom:4 }}>
-                {totalLikes} curtida{totalLikes !== 1 ? 's':''}
-              </p>
-            )}
-            <p style={{ fontSize:10, color:'var(--ink-25)', letterSpacing:'0.02em', marginBottom:6 }}>
-              {timeAgo(comments[comments.length-1]?.criadoEm) || 'há pouco'}
-            </p>
-          </div>
-
-          {/* Input row */}
-          <div style={{
-            padding:'10px 16px 16px',
-            borderTop:'1px solid var(--surface-2)',
-            display:'flex', alignItems:'center', gap:10,
-            flexShrink:0,
-          }}>
-            <Avatar name={guestName} size={28} />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Adicione um comentário…"
-              value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); handlePost(); }}}
-              maxLength={280}
-              style={{
-                flex:1, border:'none', outline:'none', background:'transparent',
-                fontFamily:'var(--f-ui)', fontSize:13, color:'var(--ink)',
-              }}
-            />
-            <button
-              onClick={handlePost}
-              disabled={!commentText.trim() || posting}
-              style={{
-                background:'none', border:'none', cursor:'pointer', padding:4,
-                color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)',
-                transition:'color 0.15s, transform 0.15s',
-                transform: posting ? 'scale(0.85)' : 'scale(1)',
-                display:'flex', alignItems:'center',
-              }}
-              aria-label="Publicar">
-              <IcoSend />
-            </button>
+              <button onClick={handlePost} disabled={posting || !commentText.trim()}
+                style={{
+                  background:'none', border:'none', cursor:'pointer', padding:4,
+                  color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)',
+                  transition:'color 0.15s, transform 0.15s',
+                  transform: posting ? 'scale(0.85)' : 'scale(1)',
+                  display:'flex', alignItems:'center',
+                }}
+                aria-label="Publicar">
+                <IcoSend />
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Keyboard hint */}
       <motion.p
         initial={{ opacity:0 }}
         animate={{ opacity:1 }}
@@ -1068,21 +987,19 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
         esc · fechar — ← → · navegar
       </motion.p>
 
-      <style>{`@keyframes lbSpin { to { transform:rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes lbSpin { to { transform:rotate(360deg); } }
+        .lb-nav-btn {
+          position:absolute; top:50%; transform:translateY(-50%); zIndex:3;
+          width:42px; height:42px; borderRadius:50%;
+          background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15);
+          color:#fff; display:flex; alignItems:center; justifyContent:center;
+          cursor:pointer; backdropFilter:blur(8px); transition:0.2s;
+        }
+        .lb-nav-btn:hover { background:rgba(255,255,255,0.25); transform:translateY(-50%) scale(1.08); }
+        .lb-nav-left { left: 14px; }
+        .lb-nav-right { right: 14px; }
+      `}</style>
     </motion.div>
   );
 }
-
-/* ── arrow button factory ── */
-const navArrowStyle = (side) => ({
-  position:'absolute', top:'50%', [side]: 14,
-  transform:'translateY(-50%)', zIndex:3,
-  width:42, height:42, borderRadius:'50%',
-  border:'1px solid rgba(255,255,255,0.14)',
-  background:'rgba(8,5,2,0.48)',
-  backdropFilter:'blur(10px)',
-  color:'rgba(255,255,255,0.85)',
-  display:'flex', alignItems:'center', justifyContent:'center',
-  cursor:'pointer',
-  transition:'background 0.18s, border-color 0.18s',
-});
