@@ -245,8 +245,7 @@ function BookViewer({ onLoginClick, pages }) {
       const opened = self.progress > 0.62;
       setBookIsOpen(p => p === opened ? p : opened);
       scrollCueRef.current?.classList.toggle('is-hidden', self.progress > 0.04);
-      // Header always visible; frosted background appears when scrolled past hero text
-      // is-visible class is already set on mount — no need to toggle
+      headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
       
       if (bookOuterRef.current) {
         bookOuterRef.current.style.boxShadow = opened
@@ -288,26 +287,18 @@ function BookViewer({ onLoginClick, pages }) {
   return (
     <div ref={containerRef} className="app-container">
 
-      <header ref={headerRef} className="fixed-header is-visible">
+      <header ref={headerRef} className="fixed-header">
         <div className="header-inner">
           <img src={logoSvg} alt="Memoary" className="logo-header" />
-          <button className="btn-login" onClick={onLoginClick}>login</button>
+          <button className="btn-login" onClick={onLoginClick}>Entrar</button>
         </div>
       </header>
 
       <div className="viewport-hero">
         <div ref={heroRef} className="hero-text-panel">
-          <span className="hero-eyebrow">
-            Mantenha suas <span className="highlight-memories">memórias</span><br />
-            eternas para <span className="highlight-always">sempre</span> com
-          </span>
+          <span className="hero-eyebrow">Seu anuário digital</span>
           <h1 className="hero-headline">
-            <svg className="hero-headline-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="2" y="6" width="16" height="28" rx="2" stroke="#18150e" strokeWidth="2.2" fill="none"/>
-              <path d="M18 10 C22 10 36 10 36 20 C36 30 22 30 18 30" stroke="#18150e" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-              <path d="M18 18 C20 18 28 18 28 20 C28 22 20 22 18 22" stroke="#18150e" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            </svg>
-            <em>Memoary</em>
+            Guarde suas<br /><em>memórias</em><br />para sempre
           </h1>
           <img src={logoSvg} alt="Memoary" className="hero-logo-lock" />
         </div>
