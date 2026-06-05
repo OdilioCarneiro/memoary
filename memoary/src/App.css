@@ -1,94 +1,143 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Teachers:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ─────────────────────────────────────────────────────────
+   RESET
+───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ─────────────────────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────────────────────── */
 :root {
-  --cor-fundo: #faf8f5;
-  --cor-texto: #322A18;
-  --cor-destaque: #C8AA69;
-  --cor-destaque-dark: #a88a45;
-  --sombra-livro: rgba(30, 20, 5, 0.55);
-  --pagina-clara: #fefcf8;
-  --pagina-borda: #dedad0;
-  --lombada: #2a1f0e;
+  /* Neutrals */
+  --ink:         #18150e;
+  --ink-80:      rgba(24, 21, 14, 0.80);
+  --ink-50:      rgba(24, 21, 14, 0.50);
+  --ink-25:      rgba(24, 21, 14, 0.25);
+  --ink-10:      rgba(24, 21, 14, 0.10);
+  --ink-06:      rgba(24, 21, 14, 0.06);
+
+  /* Surfaces */
+  --surface-0:   #f9f7f3;       /* page bg */
+  --surface-1:   #f3f0ea;       /* subtle card */
+  --surface-2:   #eae6de;       /* dividers, hover */
+  --white:       #ffffff;
+
+  /* Gold accent */
+  --gold:        #b08d3e;
+  --gold-light:  #cda84e;
+  --gold-subtle: rgba(176, 141, 62, 0.14);
+  --gold-muted:  rgba(176, 141, 62, 0.35);
+
+  /* Book materials */
+  --paper:       #fdf9f4;
+  --paper-warm:  #f5f0e6;
+  --paper-edge:  #dbd6cc;
+  --spine-1:     #100b04;
+  --spine-2:     #241908;
+  --spine-3:     #3a2a10;
+  --cover-base:  #160f06;
+
+  /* Typography */
+  --f-display: 'Cormorant Garamond', 'Georgia', serif;
+  --f-ui:      'DM Sans', system-ui, -apple-system, sans-serif;
+
+  /* Easing */
+  --ease-expo-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-expo-in:   cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-quart:     cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Spacing scale */
+  --s1:  4px;  --s2:  8px;   --s3: 12px;  --s4: 16px;
+  --s5: 20px;  --s6: 24px;   --s8: 32px;  --s10: 40px;
+
+  /* Radius */
+  --r-sm:  4px;
+  --r-md:  8px;
+  --r-lg: 12px;
+  --r-pill: 100px;
 }
 
-body, html, #root {
+/* ─────────────────────────────────────────────────────────
+   BASE
+───────────────────────────────────────────────────────── */
+html, body, #root {
   width: 100%;
   min-height: 100vh;
-  background-color: var(--cor-fundo);
-  font-family: 'Teachers', sans-serif;
-  color: var(--cor-texto);
+  background: var(--surface-0);
+  font-family: var(--f-ui);
+  color: var(--ink);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* =============================================
-   HEADER
-   ============================================= */
+/* ─────────────────────────────────────────────────────────
+   HEADER — frosted glass, Apple-style
+───────────────────────────────────────────────────────── */
 .fixed-header {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%;
-  height: 80px;
-  z-index: 200;
-  padding: 0 50px;
+  inset: 0 0 auto 0;
+  height: 64px;
+  z-index: 500;
+  padding: 0 48px;
   display: flex;
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.5s ease, backdrop-filter 0.5s ease;
+  /* no transition on initial hide — JS toggles class */
 }
 
-.fixed-header.visible {
+.fixed-header.is-visible {
   opacity: 1;
   pointer-events: auto;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(250, 248, 245, 0.85);
-  border-bottom: 1px solid rgba(200, 170, 105, 0.2);
+  background: rgba(249, 247, 243, 0.82);
+  backdrop-filter: saturate(200%) blur(24px);
+  -webkit-backdrop-filter: saturate(200%) blur(24px);
+  border-bottom: 1px solid var(--ink-06);
+  transition:
+    opacity        0.5s var(--ease-expo-out),
+    background     0.5s var(--ease-expo-out),
+    border-color   0.5s var(--ease-expo-out);
 }
 
-.header-content {
+.header-inner {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.logo-header { height: 36px; }
+.logo-header { height: 26px; display: block; }
 
-.login-btn {
+.btn-login {
+  height: 34px;
+  padding: 0 20px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--ink-25);
   background: transparent;
-  border: 1.5px solid var(--cor-texto);
-  padding: 8px 28px;
-  border-radius: 25px;
-  font-size: 15px;
-  font-weight: 600;
-  font-family: 'Teachers', sans-serif;
-  color: var(--cor-texto);
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink);
   cursor: pointer;
-  transition: all 0.25s ease;
-  letter-spacing: 0.03em;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
-.login-btn:hover {
-  background: var(--cor-texto);
-  color: var(--cor-fundo);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(50, 42, 24, 0.2);
+.btn-login:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
 }
 
-/* =============================================
-   HERO + PINNED SECTION
-   ============================================= */
-.app-container {
-  width: 100%;
-  position: relative;
-}
+/* ─────────────────────────────────────────────────────────
+   APP SHELL
+───────────────────────────────────────────────────────── */
+.app-container { width: 100%; position: relative; }
 
+/* Hero: pinned by GSAP ScrollTrigger */
 .viewport-hero {
   width: 100%;
   height: 100vh;
@@ -96,528 +145,781 @@ body, html, #root {
   overflow: hidden;
   display: flex;
   align-items: center;
+  background: var(--surface-0);
+  /* Subtle noise grain via SVG filter */
+  isolation: isolate;
 }
 
-/* Fundo com textura de papel sutíl */
+/* Grain overlay */
+.viewport-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px;
+  z-index: 0;
+}
+
+/* Ambient radial gradients */
 .viewport-hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(200, 170, 105, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(50, 42, 24, 0.04) 0%, transparent 50%);
+  background:
+    radial-gradient(ellipse 55% 70% at 15% 55%, rgba(176, 141, 62, 0.055) 0%, transparent 100%),
+    radial-gradient(ellipse 40% 40% at 80% 20%, rgba(24, 21, 14, 0.035) 0%, transparent 100%);
   pointer-events: none;
+  z-index: 0;
 }
 
-/* =============================================
-   PAINEL DA ESQUERDA (SLOGAN)
-   ============================================= */
-.left-hero-panel {
+/* ─────────────────────────────────────────────────────────
+   HERO TEXT PANEL
+───────────────────────────────────────────────────────── */
+.hero-text-panel {
   position: absolute;
   left: 8vw;
   z-index: 10;
-  width: 42vw;
-  max-width: 520px;
-  display: flex;
-  justify-content: flex-end;
+  width: 38vw;
+  max-width: 460px;
 }
 
-.slogan-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  font-family: var(--f-ui);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: var(--s5);
 }
 
-.slogan-text {
-  font-family: 'Playfair Display', serif;
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1.1;
-  text-align: right;
-  color: var(--cor-texto);
-  letter-spacing: -0.01em;
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: var(--gold);
+  flex-shrink: 0;
 }
 
-.highlight-gold {
-  color: var(--cor-destaque);
+.hero-headline {
+  font-family: var(--f-display);
+  font-size: clamp(2.8rem, 3.8vw, 4.4rem);
+  font-weight: 300;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-bottom: var(--s6);
+}
+
+.hero-headline em {
   font-style: italic;
+  color: var(--gold);
+  font-weight: 400;
 }
 
-.logo-initial-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
+.hero-logo-lock {
+  display: block;
+  height: 30px;
+  opacity: 0.7;
 }
 
-.logo-initial { height: 80px; }
+.hero-sub {
+  margin-top: var(--s4);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-50);
+  line-height: 1.6;
+  max-width: 320px;
+}
 
-/* Scroll hint */
-.scroll-hint {
+/* ─────────────────────────────────────────────────────────
+   SCROLL INDICATOR
+───────────────────────────────────────────────────────── */
+.scroll-cue {
   position: absolute;
   bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  color: var(--cor-destaque);
-  font-size: 12px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  gap: var(--s2);
+  z-index: 10;
   opacity: 1;
   transition: opacity 0.4s ease;
-  z-index: 10;
 }
 
-.scroll-hint.hidden { opacity: 0; }
+.scroll-cue.is-hidden { opacity: 0; pointer-events: none; }
 
-.scroll-arrow {
-  width: 20px;
-  height: 20px;
-  border-right: 2px solid var(--cor-destaque);
-  border-bottom: 2px solid var(--cor-destaque);
-  transform: rotate(45deg);
-  animation: scrollBounce 1.6s ease infinite;
+.scroll-cue-track {
+  width: 1px;
+  height: 56px;
+  background: var(--ink-10);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1px;
 }
 
-@keyframes scrollBounce {
-  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 1; }
-  50% { transform: rotate(45deg) translateY(6px); opacity: 0.5; }
+.scroll-cue-track::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  animation: cueTrack 2s var(--ease-quart) infinite;
 }
 
-/* =============================================
-   LIVRO 3D — CONTAINER PRINCIPAL
-   ============================================= */
+@keyframes cueTrack {
+  0%   { top: -50%; opacity: 0; }
+  20%  { opacity: 1; }
+  100% { top: 150%; opacity: 0; }
+}
+
+.scroll-cue-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-25);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* ─────────────────────────────────────────────────────────
+   BOOK SCENE CONTAINER
+───────────────────────────────────────────────────────── */
 .book-scene {
   position: absolute;
-  perspective: 2800px;
-  perspective-origin: 50% 45%;
   transform-style: preserve-3d;
-  z-index: 5;
+  z-index: 20;
+  /* perspective injected inline */
 }
 
-.book-3d-wrapper {
+/* Wrapper holds drop-shadow (can't use on preserve-3d subtree directly) */
+.book-outer {
   position: relative;
   transform-style: preserve-3d;
-  /* A sombra do livro sobre a superfície */
-  filter: drop-shadow(0 60px 40px rgba(30, 20, 5, 0.45));
 }
 
-/* Lombada lateral visível */
+/* ─────────────────────────────────────────────────────────
+   BOOK ANATOMY — 3D FACES
+───────────────────────────────────────────────────────── */
+
+/* Spine — left lateral face */
 .book-spine {
   position: absolute;
-  left: -18px;
   top: 0;
-  width: 18px;
-  height: 100%;
-  background: linear-gradient(to right, #1a1208, #3d2e12, #2a1f0e);
+  left: 0;
+  /* width & height via inline style */
   transform-origin: right center;
   transform: rotateY(-90deg);
   backface-visibility: hidden;
-  border-radius: 3px 0 0 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(
+    to right,
+    var(--spine-1) 0%,
+    var(--spine-2) 30%,
+    var(--spine-3) 65%,
+    var(--spine-2) 100%
+  );
   overflow: hidden;
 }
 
+/* Specular strip on spine */
 .book-spine::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom,
-    rgba(255,255,255,0.12) 0%,
-    transparent 30%,
-    rgba(0,0,0,0.2) 70%,
-    rgba(0,0,0,0.4) 100%
-  );
+  top: 0;
+  left: 22%;
+  width: 18%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
 }
 
-/* Topo e base do livro */
+/* Top face */
 .book-top {
   position: absolute;
-  top: -8px;
+  top: 0;
   left: 0;
-  width: 100%;
-  height: 8px;
-  background: linear-gradient(to bottom, #e8e4d8, #d4cfc0);
-  transform-origin: bottom center;
+  /* width & height via inline */
+  transform-origin: center bottom;
   transform: rotateX(90deg);
   backface-visibility: hidden;
-  /* Efeito de páginas empilhadas */
-  background-image: repeating-linear-gradient(
+  /* Fine lines = stacked pages */
+  background: repeating-linear-gradient(
     90deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.04) 2px,
-    rgba(0,0,0,0.04) 3px
+    #d8d3c8,
+    #d8d3c8 1px,
+    #ede9e0 1px,
+    #ede9e0 3px
   );
 }
 
-/* =============================================
-   CAPA DO LIVRO
-   ============================================= */
-.book-cover-3d {
+/* Right edge (stacked pages) */
+.book-fore-edge {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  /* left injected inline = BOOK_W */
+  /* width injected inline */
+  height: 100%;
+  transform-origin: left center;
+  transform: rotateY(90deg);
+  backface-visibility: hidden;
+  background: repeating-linear-gradient(
+    180deg,
+    #d8d3c8,
+    #d8d3c8 1px,
+    #f0ece4 1px,
+    #f0ece4 2.8px
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   COVER
+───────────────────────────────────────────────────────── */
+.book-cover {
+  position: absolute;
+  inset: 0;
   transform-style: preserve-3d;
   transform-origin: left center;
-  transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1.000);
-  z-index: 10;
-  border-radius: 3px 6px 6px 3px;
+  z-index: 30;
+  /* CSS transition for GSAP-triggered class */
+  transition: transform 1.4s var(--ease-quart);
+  border-radius: 2px 5px 5px 2px;
+  will-change: transform;
 }
 
-.book-cover-3d.open {
-  transform: rotateY(-175deg);
+.book-cover.is-open {
+  transform: rotateY(-176deg);
 }
 
-.cover-side-front,
-.cover-side-back {
+.cover-face {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  inset: 0;
   backface-visibility: hidden;
-  border-radius: 3px 6px 6px 3px;
   overflow: hidden;
 }
 
-.cover-side-front {
-  /* Reflexo sutil na capa */
-  background: #1a1208;
+.cover-face--front {
+  border-radius: 2px 5px 5px 2px;
+  background: var(--cover-base);
 }
 
-.cover-side-front::after {
+/* Gloss sheen on front cover */
+.cover-face--front::after {
   content: '';
   position: absolute;
-  top: 0; left: 0;
-  width: 40%;
-  height: 100%;
-  background: linear-gradient(to right, rgba(255,255,255,0.04) 0%, transparent 100%);
+  inset: 0;
+  background:
+    linear-gradient(130deg,
+      rgba(255,255,255,0.09) 0%,
+      rgba(255,255,255,0.02) 35%,
+      transparent 55%
+    ),
+    linear-gradient(90deg,
+      rgba(255,255,255,0.05) 0%,
+      transparent 20%
+    );
   pointer-events: none;
   z-index: 2;
 }
 
-.cover-side-back {
+.cover-face--back {
+  border-radius: 5px 2px 2px 5px;
   transform: rotateY(180deg);
+  /* Gutter + endpaper gradient */
   background: linear-gradient(
-    to right,
-    #2a1f0e 0%,
-    #3d2e12 4%,
-    #e8e4d8 6%,
-    #f5f2ec 12%,
-    #fefcf8 100%
+    90deg,
+    var(--spine-1)    0%,
+    var(--spine-2)    2.5%,
+    var(--paper-edge) 4%,
+    var(--paper-warm) 8%,
+    var(--paper)      100%
   );
-  border-radius: 6px 3px 3px 6px;
 }
 
-.capa-img-render {
+.cover-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  z-index: 1;
 }
 
-/* Verniz sobre a capa */
-.cover-gloss {
+/* Fine embossed border on cover */
+.cover-emboss {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255,255,255,0.15) 0%,
-    rgba(255,255,255,0.05) 25%,
-    transparent 50%,
-    rgba(0,0,0,0.1) 100%
-  );
+  inset: 14px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 1px;
   pointer-events: none;
   z-index: 3;
 }
 
-/* =============================================
-   PÁGINAS ESTÁTICAS (FUNDO DO LIVRO)
-   ============================================= */
+/* ─────────────────────────────────────────────────────────
+   STATIC PAGE FACES
+───────────────────────────────────────────────────────── */
 .static-page {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  inset: 0;
   transform-style: preserve-3d;
-  border-radius: 3px 6px 6px 3px;
   overflow: hidden;
 }
 
 .page-face {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  inset: 0;
   backface-visibility: hidden;
   overflow: hidden;
 }
 
-/* Textura de página realista */
-.page-face.page-right {
-  background:
-    linear-gradient(to right, #c8c3b5 0%, #e8e4d8 2%, #f8f6f2 4%, #fefcf8 100%);
-  border-radius: 3px 6px 6px 3px;
+/* Right page (verso) — gutter shadow from left spine */
+.page-face--right {
+  border-radius: 2px 5px 5px 2px;
+  background: linear-gradient(
+    90deg,
+    #a8a39a 0%,
+    #cdc8bf 1%,
+    #e5e0d6 3%,
+    var(--paper) 100%
+  );
 }
 
-.page-face.page-left {
-  background:
-    linear-gradient(to left, #c8c3b5 0%, #e8e4d8 2%, #f8f6f2 4%, #fefcf8 100%);
-  border-radius: 6px 3px 3px 6px;
-  transform: rotateY(180deg);
-}
-
-/* Sombra da lombada nas páginas */
-.page-face.page-right::before {
+.page-face--right::before {
   content: '';
   position: absolute;
   left: 0; top: 0;
-  width: 40px; height: 100%;
-  background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Linhas de páginas empilhadas na borda direita */
-.page-stack-edge {
-  position: absolute;
-  right: -4px;
-  top: 1%;
-  width: 5px;
-  height: 98%;
-  background: repeating-linear-gradient(
-    to bottom,
-    #e8e4d8,
-    #e8e4d8 1px,
-    #f5f2ec 1px,
-    #f5f2ec 3px
-  );
-  border-radius: 0 2px 2px 0;
-  z-index: -1;
-}
-
-/* =============================================
-   PÁGINA VIRANDO — O CORAÇÃO DO EFEITO
-   ============================================= */
-.flippable-page-container {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  transform-style: preserve-3d;
-  transform-origin: left center;
-  will-change: transform;
-  border-radius: 3px 6px 6px 3px;
-  pointer-events: none;
-}
-
-/* Sombra dinâmica projetada ao virar a página */
-.flip-shadow-right {
-  position: absolute;
-  top: 0; left: 100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(to left, rgba(30,15,0,0.35) 0%, transparent 80%);
-  transform-origin: left center;
-  pointer-events: none;
-  backface-visibility: hidden;
-}
-
-.flip-shadow-left {
-  position: absolute;
-  top: 0; right: 100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(to right, rgba(30,15,0,0.35) 0%, transparent 80%);
-  transform-origin: right center;
-  pointer-events: none;
-  backface-visibility: hidden;
-}
-
-/* Curvatura de página — gradiente que simula o dobramento */
-.page-curl-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to left,
-    rgba(255,255,255,0.6) 0%,
-    rgba(220,215,200,0.3) 15%,
-    transparent 40%
+  width: 52px; height: 100%;
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0.12) 0%,
+    rgba(0,0,0,0.04) 60%,
+    transparent 100%
   );
   pointer-events: none;
   z-index: 2;
+}
+
+/* Left page (recto) — gutter shadow from right spine */
+.page-face--left {
+  border-radius: 5px 2px 2px 5px;
+  transform: rotateY(180deg);
+  background: linear-gradient(
+    270deg,
+    #a8a39a 0%,
+    #cdc8bf 1%,
+    #e5e0d6 3%,
+    var(--paper) 100%
+  );
+}
+
+.page-face--left::before {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 52px; height: 100%;
+  background: linear-gradient(270deg,
+    rgba(0,0,0,0.12) 0%,
+    rgba(0,0,0,0.04) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─────────────────────────────────────────────────────────
+   PAGE DECORATIONS
+───────────────────────────────────────────────────────── */
+.page-rule {
+  position: absolute;
+  top: 30px;
+  left: 36px; right: 36px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gold-subtle) 20%,
+    var(--gold-muted) 50%,
+    var(--gold-subtle) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+}
+
+.page-folio {
+  position: absolute;
+  bottom: 24px;
+  font-family: var(--f-display);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--ink-25);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.page-folio--right { right: 36px; }
+.page-folio--left  { left:  36px; }
+
+/* ─────────────────────────────────────────────────────────
+   FLIPPING LEAF
+   The "holy grail" 3D page turn — six distinct layers:
+   1. Leaf base (rotateY 0→-180)
+   2. Front content
+   3. Front fold highlight (bright crease moving inward)
+   4. Front self-shadow (dark edge as page curves away)
+   5. Back content (rotateY 180deg face)
+   6. Back fold shadow (darker, paper is thinner from behind)
+   Plus:
+   7. Cast shadow projected on the opposite static page
+   8. Ambient shadow under the flying page (depth illusion)
+───────────────────────────────────────────────────────── */
+.flip-leaf {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Cast shadow: flat sibling above static page, z below the leaf */
+.flip-cast-shadow {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+  /* width + background animated via motion values */
+}
+
+/* Ambient shadow: the page "lifts" as it peels, casting a diffuse blob */
+.flip-ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 19;
+  border-radius: 2px 5px 5px 2px;
+  /* box-shadow animated via JS */
+}
+
+/* Both page faces inside the leaf */
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.flip-face--front {
+  border-radius: 2px 5px 5px 2px;
+  background: linear-gradient(
+    90deg,
+    #a8a39a 0%,
+    #cdc8bf 1%,
+    #e5e0d6 3%,
+    var(--paper) 100%
+  );
+}
+
+.flip-face--back {
+  border-radius: 5px 2px 2px 5px;
+  transform: rotateY(180deg);
+  background: linear-gradient(
+    270deg,
+    #a8a39a 0%,
+    #cdc8bf 1%,
+    #e5e0d6 3%,
+    var(--paper) 100%
+  );
+}
+
+/* Cloth-fold crease overlay (positioned inside each face) */
+.flip-crease {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
   backface-visibility: hidden;
 }
 
-/* =============================================
-   ÁREA DE ARRASTE
-   ============================================= */
-.drag-overlay {
+/* ─────────────────────────────────────────────────────────
+   PAGE CONTENT
+───────────────────────────────────────────────────────── */
+.page-content {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 50;
-  cursor: grab;
-  background: transparent;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.drag-overlay:active { cursor: grabbing; }
+/* ─────────────────────────────────────────────────────────
+   EMPTY PAGE
+───────────────────────────────────────────────────────── */
+.empty-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
 
-/* =============================================
-   NAVEGAÇÃO DO LIVRO
-   ============================================= */
+.empty-page-ornament {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-page-ornament::before,
+.empty-page-ornament::after {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-muted), transparent);
+}
+
+.empty-page-text {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--ink-25);
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* ─────────────────────────────────────────────────────────
+   ENDPAPER (inside covers)
+───────────────────────────────────────────────────────── */
+.endpaper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--paper) 0%, var(--paper-warm) 100%);
+}
+
+.endpaper-logo { width: 64px; opacity: 0.18; display: block; }
+
+.endpaper-mark {
+  font-family: var(--f-display);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--ink-25);
+}
+
+/* ─────────────────────────────────────────────────────────
+   DRAG ZONE
+───────────────────────────────────────────────────────── */
+.drag-zone {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  cursor: grab;
+}
+.drag-zone:active { cursor: grabbing; }
+
+/* ─────────────────────────────────────────────────────────
+   BOOK NAVIGATION
+───────────────────────────────────────────────────────── */
 .book-nav {
   position: absolute;
-  bottom: -70px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 20px;
-  z-index: 100;
+  gap: 12px;
+  z-index: 200;
   white-space: nowrap;
+  /* bottom injected inline */
 }
 
-.book-nav-btn {
-  background: var(--cor-destaque);
-  color: #fff;
-  border: none;
-  padding: 10px 28px;
-  border-radius: 25px;
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--ink-10);
+  background: rgba(249, 247, 243, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink);
   cursor: pointer;
-  font-family: 'Teachers', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.05em;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(200, 170, 105, 0.35);
+  transition: background 0.16s ease, border-color 0.16s ease,
+              color 0.16s ease, transform 0.16s ease,
+              box-shadow 0.16s ease, opacity 0.16s ease;
+  box-shadow: 0 1px 3px var(--ink-06), 0 4px 12px var(--ink-06);
 }
 
-.book-nav-btn:hover:not(:disabled) {
-  background: var(--cor-destaque-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(200, 170, 105, 0.45);
+.nav-btn svg {
+  width: 14px; height: 14px;
+  flex-shrink: 0;
+  stroke-width: 1.5;
 }
 
-.book-nav-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.nav-btn:hover:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(24, 21, 14, 0.2);
+}
+
+.nav-btn:active:not(:disabled) {
+  transform: translateY(0);
   box-shadow: none;
 }
 
-.page-counter {
-  font-family: 'Playfair Display', serif;
+.nav-btn:disabled {
+  opacity: 0.28;
+  cursor: default;
+  box-shadow: none;
+}
+
+.nav-counter {
+  font-family: var(--f-display);
   font-size: 14px;
-  color: var(--cor-texto);
-  opacity: 0.6;
-  min-width: 80px;
+  font-weight: 400;
+  color: var(--ink-50);
+  letter-spacing: 0.05em;
+  min-width: 68px;
   text-align: center;
+  user-select: none;
 }
 
-/* =============================================
-   CONTEÚDO DENTRO DAS PÁGINAS
-   ============================================= */
-.page-content-wrapper {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-/* Número de página elegante */
-.page-number {
-  position: absolute;
-  bottom: 18px;
-  font-family: 'Playfair Display', serif;
-  font-size: 11px;
-  color: rgba(50, 42, 24, 0.35);
-  letter-spacing: 0.1em;
-}
-
-.page-number.right { right: 24px; }
-.page-number.left { left: 24px; }
-
-/* Linha decorativa de cabeçalho da página */
-.page-header-line {
-  position: absolute;
-  top: 22px;
-  left: 24px; right: 24px;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(200, 170, 105, 0.4), transparent);
-}
-
-/* =============================================
-   EMPTY STATE
-   ============================================= */
-.empty-book-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-  padding: 40px;
-}
-
-.empty-book-icon {
-  font-size: 48px;
-  opacity: 0.25;
-}
-
-.empty-book-text {
-  font-family: 'Playfair Display', serif;
-  font-size: 1rem;
-  color: rgba(50, 42, 24, 0.4);
-  text-align: center;
-  line-height: 1.6;
-}
-
-/* =============================================
-   PÁGINA INICIAL / FIM
-   ============================================= */
-.endpaper {
-  width: 100%;
-  height: 100%;
+/* ─────────────────────────────────────────────────────────
+   ADMIN SHELL
+───────────────────────────────────────────────────────── */
+.admin-bar {
+  height: 52px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #faf8f3 0%, #f0ece0 100%);
+  justify-content: space-between;
+  background: var(--white);
+  border-bottom: 1px solid var(--surface-2);
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
-.endpaper-content {
-  display: flex;
-  flex-direction: column;
+.admin-bar-left { display: flex; align-items: center; gap: 16px; }
+
+.admin-bar-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--ink-10);
+}
+
+.admin-bar-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-80);
+  letter-spacing: 0.01em;
+}
+
+.btn-back {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-  opacity: 0.3;
+  gap: 5px;
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-50);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 2px;
+  transition: color 0.14s ease;
+}
+.btn-back:hover { color: var(--ink); }
+.btn-back svg { width: 13px; height: 13px; }
+
+.btn-logout {
+  font-family: var(--f-ui);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 14px;
+  height: 30px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--surface-2);
+  background: var(--white);
+  color: #a12e1f;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+.btn-logout:hover { background: #fff5f4; border-color: #f5c5c0; }
+
+/* ─────────────────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  padding: 10px 22px;
+  border-radius: var(--r-pill);
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+  animation: toastSlide 0.35s var(--ease-expo-out) both;
 }
 
-.endpaper-logo { width: 100px; }
+.toast--ok  { background: var(--ink); color: var(--white); }
+.toast--err { background: #a12e1f;    color: var(--white); }
 
-.endpaper-text {
-  font-family: 'Playfair Display', serif;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--cor-texto);
+@keyframes toastSlide {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0);     }
 }
 
-/* =============================================
-   MOBILE
-   ============================================= */
-@media (max-width: 900px) {
-  .left-hero-panel {
-    width: 90%;
-    left: 5%;
-    top: 12%;
-    transform: none;
-    justify-content: center;
-  }
-  .slogan-container { align-items: center; }
-  .slogan-text { text-align: center; font-size: 2rem; }
-  .logo-initial { height: 60px; }
-  .book-nav { bottom: -60px; }
-  .book-nav-btn { padding: 8px 20px; font-size: 13px; }
+/* ─────────────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .hero-text-panel { width: 46vw; }
 }
 
-@media (max-width: 500px) {
-  .fixed-header { padding: 0 20px; }
-  .slogan-text { font-size: 1.6rem; }
+@media (max-width: 860px) {
+  .hero-text-panel { width: 90%; left: 5%; top: 8%; position: absolute; }
+  .hero-headline { font-size: 2.6rem; }
+  .scroll-cue { display: none; }
+  .fixed-header { padding: 0 24px; }
+}
+
+@media (max-width: 480px) {
+  .hero-headline { font-size: 2.1rem; }
+  .nav-btn span { display: none; }
+  .nav-btn { padding: 0 14px; }
 }
