@@ -210,3 +210,86 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
     res.status(500).json({ success: false, message: 'Falha interna ao processar armazenamento em nuvem.' });
   }
 });
+
+// ==========================================
+// ROTAS DE COMENTÁRIOS (MONGODB NATIVO)
+// ==========================================
+
+/* ── GET /api/comentarios/:photoId ── */
+app.get('/api/comentarios/:photoId', async (req, res) => {
+  try {
+    const { photoId } = req.params;
+    const colecao = db.collection('comentarios');
+    
+    // .find().toArray() é o equivalente ao .find().lean() do Mongoose
+    const comentarios = await colecao
+      .find({ photoId: decodeURIComponent(photoId) })
+      .sort({ criadoEm: 1 })
+      .limit(200)
+      .toArray();
+      
+    res.json({ success: true, data: comentarios });
+  } catch (error) {
+    console.error('Erro ao buscar comentários:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao buscar comentários.' });
+  }
+});
+
+/* ── POST /api/comentarios ── */
+app.post('/api/comentarios', async (req, res) => {
+  try {
+    const { photoId, autor, texto } = req.body;
+    
+    if (!photoId || !autor || !texto) {
+      return res.status(400).json({ success: false, message: 'Campos obrigatórios ausentes.' });
+    }
+
+    // Criamos o objeto manualmente, limitando o tamanho igual o Schema fazia
+    const novoComentario = {
+      photoId,
+      autor: autor.trim().substring(0, 60), 
+      texto: texto.trim().substring(0, 280),
+      likes: 0,
+      criadoEm: new Date()
+    };
+
+    const colecao = db.collection('comentarios');
+    const resultado = await colecao.insertOne(novoComentario);
+
+    // Devolvemos o objeto criado junto com o _id que o MongoDB gerou
+    res.status(201).json({ 
+      success: true, 
+      data: { ...novoComentario, _id: resultado.insertedId } 
+    });
+  } catch (error) {
+    console.error('Erro ao criar comentário:', error);
+    res.status(500).json({ success: false, message: 'Erro ao salvar comentário.' });
+  }
+});
+
+/* ── POST /api/comentarios/:id/like ── */
+app.post('/api/comentarios/:id/like', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { unlike } = req.body;
+    const delta = unlike ? -1 : 1;
+
+    const colecao = db.collection('comentarios');
+    
+    // findOneAndUpdate com returnDocument: 'after' substitui o { new: true } do Mongoose
+    const resultado = await colecao.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $inc: { likes: delta } },
+      { returnDocument: 'after' } // Garante que a variável 'resultado' tenha os dados pós-atualização
+    );
+
+    if (!resultado) {
+      return res.status(404).json({ success: false, message: 'Comentário não encontrado.' });
+    }
+
+    res.json({ success: true, data: resultado });
+  } catch (error) {
+    console.error('Erro ao atualizar like:', error);
+    res.status(500).json({ success: false, message: 'Erro ao processar curtida.' });
+  }
+});
