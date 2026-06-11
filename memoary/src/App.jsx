@@ -256,11 +256,11 @@ function BookViewer({ onLoginClick, pages }) {
 
     // Animação para Telas Grandes (Computador)
     mm.add("(min-width: 900px)", () => {
-      // Começa um pouco mais alto (top: 45%)
-      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'71%', top:'45%', rotationY:-20, rotationZ:-5, scale: 0.8 });
+      // Começa centralizado horizontalmente e um pouco mais alto
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'45%', rotationY:-20, rotationZ:-5, scale: 0.8 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, x:-70, duration:0.4, ease:'power2.in' }, 0);
-      // 🔥 Quando o livro abre e vai pro centro, ele sobe para 44% (sobrando muito espaço embaixo)
+      // 🔥 Quando o livro abre, permanece centralizado e sobe levemente
       tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
@@ -270,8 +270,8 @@ function BookViewer({ onLoginClick, pages }) {
       gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'55%', rotationY:-15, rotationZ:-3, scale: 0.85 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=2500', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, y:-50, duration:0.4, ease:'power2.in' }, 0);
-      // 🔥 No celular, ele também trava no 44% para sobrar espaço pros botões
-      tl.to(bookSceneRef.current, { top:'44%', left:'50%', xPercent:-50, rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      // 🔥 No celular, o livro permanece centralizado e sobe para 44%
+      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
@@ -787,8 +787,8 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Em mobile mostra só a foto (sem painel de comentários lateral)
-  const [showCommentsMobile, setShowCommentsMobile] = useState(false);
+  // Em mobile, mostramos o painel de comentários por padrão para evitar botões extras sobre a imagem.
+  const [showCommentsMobile, setShowCommentsMobile] = useState(true);
 
   if (!cur || !cur.url) return null;
 
@@ -916,23 +916,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
             <IcoClose />
           </button>
 
-          {/* Botão de comentários (mobile) */}
-          {isMobileModal && (
-            <button
-              onClick={e => { e.stopPropagation(); setShowCommentsMobile(v => !v); }}
-              style={{
-                position:'absolute', bottom:14, right:14, zIndex:10,
-                height:36, padding:'0 16px', borderRadius:18,
-                background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)',
-                color:'#fff', display:'flex', alignItems:'center', gap:6,
-                cursor:'pointer', backdropFilter:'blur(8px)',
-                fontSize:12, fontFamily:'var(--f-ui)', fontWeight:500,
-              }}
-            >
-              <IcoHeart filled={false} />
-              <span>{comments.length} comentário{comments.length !== 1 ? 's' : ''}</span>
-            </button>
-          )}
         </div>
 
         {/* ── Painel de comentários ── */}

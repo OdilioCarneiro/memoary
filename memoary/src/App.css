@@ -87,20 +87,22 @@ html, body, #root {
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  /* no transition on initial hide — JS toggles class */
+  transform: translateY(12px);
+  transition:
+    opacity        0.5s var(--ease-expo-out),
+    transform      0.45s var(--ease-expo-out),
+    background     0.5s var(--ease-expo-out),
+    border-color   0.5s var(--ease-expo-out);
 }
 
 .fixed-header.is-visible {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
   background: rgba(249, 247, 243, 0.82);
   backdrop-filter: saturate(200%) blur(24px);
   -webkit-backdrop-filter: saturate(200%) blur(24px);
   border-bottom: 1px solid var(--ink-06);
-  transition:
-    opacity        0.5s var(--ease-expo-out),
-    background     0.5s var(--ease-expo-out),
-    border-color   0.5s var(--ease-expo-out);
 }
 
 .header-inner {
