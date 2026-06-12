@@ -85,9 +85,10 @@ html, body, #root {
   padding: 0 48px;
   display: flex;
   align-items: center;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(12px);
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  background: transparent;
   transition:
     opacity        0.5s var(--ease-expo-out),
     transform      0.45s var(--ease-expo-out),
@@ -96,9 +97,6 @@ html, body, #root {
 }
 
 .fixed-header.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
   background: rgba(249, 247, 243, 0.82);
   backdrop-filter: saturate(200%) blur(24px);
   -webkit-backdrop-filter: saturate(200%) blur(24px);
