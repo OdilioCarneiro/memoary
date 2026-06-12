@@ -150,6 +150,7 @@ function BookViewer({ onLoginClick, pages }) {
   const bookSceneRef  = useRef(null);
   const bookOuterRef  = useRef(null);
   const coverRef      = useRef(null);
+  const navRef        = useRef(null);
   const headerRef     = useRef(null);
   const heroRef       = useRef(null);
   const scrollCueRef  = useRef(null);
@@ -256,22 +257,26 @@ function BookViewer({ onLoginClick, pages }) {
 
     // Animação para Telas Grandes (Computador)
     mm.add("(min-width: 900px)", () => {
-      // Começa centralizado horizontalmente e um pouco mais alto
-      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'45%', rotationY:-20, rotationZ:-5, scale: 0.8 });
+      // Começa de ladinho e depois centraliza suavemente
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'62%', top:'49%', rotationY:-20, rotationZ:-5, scale: 0.78 });
+      gsap.set(navRef.current, { y: 0 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
-      tl.to(heroRef.current, { opacity:0, x:-70, duration:0.4, ease:'power2.in' }, 0);
-      // 🔥 Quando o livro abre, permanece centralizado e sobe levemente
+      tl.to(heroRef.current, { opacity:0, x:-90, duration:0.4, ease:'power2.in' }, 0);
+      // Quando o livro centraliza, a navegação também sobe devagarinho
       tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      tl.to(navRef.current, { y: -24, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
     // Animação para Telas Pequenas (Celular e Tablet)
     mm.add("(max-width: 899px)", () => {
       gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'55%', rotationY:-15, rotationZ:-3, scale: 0.85 });
+      gsap.set(navRef.current, { y: 0 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=2500', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, y:-50, duration:0.4, ease:'power2.in' }, 0);
-      // 🔥 No celular, o livro permanece centralizado e sobe para 44%
+      // No celular, o livro permanece centralizado e a tab sobe com o zoom
       tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      tl.to(navRef.current, { y: -18, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
@@ -369,7 +374,7 @@ function BookViewer({ onLoginClick, pages }) {
             {/* 🔥 CORREÇÃO: "drag-zone" removida daqui para liberar os cliques! */}
 
             {bookIsOpen && (
-              <nav className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
+              <nav ref={navRef} className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
                 <button className="nav-btn" onClick={flipBackward}
                   disabled={isFlipping || spreadIdx < 0}>
                   <ChevronLeft /><span>Anterior</span>
