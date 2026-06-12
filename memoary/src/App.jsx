@@ -263,9 +263,9 @@ function BookViewer({ onLoginClick, pages }) {
       if (headerRef.current) gsap.set(headerRef.current, { y: 0, opacity: 1 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, x:-90, duration:0.4, ease:'power2.in' }, 0);
-      // Quando o livro centraliza, a navegação e o topo sobem juntos com o zoom
-      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
-      if (navRef.current) tl.to(navRef.current, { y: -24, duration:1.1, ease:'expo.inOut' }, 0.08);
+      // Quando o livro centraliza, ele fica no meio exato da tela e a navegação sobe totalmente
+      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'50%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
+      if (navRef.current) tl.to(navRef.current, { y: -60, duration:1.1, ease:'expo.inOut' }, 0.08);
       if (headerRef.current) tl.to(headerRef.current, { y: -18, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
