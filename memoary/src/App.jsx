@@ -253,11 +253,18 @@ function BookViewer({ onLoginClick, pages }) {
           ? '-35px 35px 65px rgba(15, 10, 5, 0.45)' 
           : '-15px 15px 35px rgba(15, 10, 5, 0.35)';
       }
+      const progress = Math.min(Math.max((self.progress - 0.2) / 0.8, 0), 1);
       if (navRef.current) {
-        const navProgress = Math.min(Math.max((self.progress - 0.25) / 0.75, 0), 1);
         gsap.set(navRef.current, {
-          y: -120 * navProgress,
-          opacity: 1 - navProgress,
+          y: -200 * progress,
+          opacity: 1 - progress,
+        });
+      }
+      if (headerRef.current) {
+        gsap.set(headerRef.current, {
+          y: -120 * progress,
+          opacity: 1 - progress,
+          pointerEvents: progress > 0.98 ? 'none' : 'auto',
         });
       }
     };
@@ -270,10 +277,10 @@ function BookViewer({ onLoginClick, pages }) {
       if (headerRef.current) gsap.set(headerRef.current, { y: 0, opacity: 1 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, x:-90, duration:0.4, ease:'power2.in' }, 0);
-      // Quando o livro centraliza, ele fica no meio exato da tela e a navegação sobe totalmente
+      // Quando o livro centraliza, ele fica no meio exato da tela e a navegação some totalmente
       tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'50%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
-      if (navRef.current) tl.to(navRef.current, { y: -120, opacity: 0, duration:1.1, ease:'expo.inOut' }, 0.08);
-      if (headerRef.current) tl.to(headerRef.current, { y: -18, duration:1.1, ease:'expo.inOut' }, 0.08);
+      if (navRef.current) tl.to(navRef.current, { y: -220, opacity: 0, duration:1.1, ease:'expo.inOut' }, 0.08);
+      if (headerRef.current) tl.to(headerRef.current, { y: -120, opacity: 0, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
@@ -284,10 +291,10 @@ function BookViewer({ onLoginClick, pages }) {
       gsap.set(headerRef.current, { y: 0, opacity: 1 });
       const tl = gsap.timeline({ scrollTrigger: { trigger: '.viewport-hero', start:'top top', end:'+=2500', scrub:1.5, pin:true, onUpdate: onUpdateShared } });
       tl.to(heroRef.current, { opacity:0, y:-50, duration:0.4, ease:'power2.in' }, 0);
-      // No celular, o livro centraliza e a tab sobe totalmente com o zoom
+      // No celular, o livro centraliza e a tab some totalmente com o zoom
       tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'44%', rotationY:0, rotationZ:0, scale: 1, duration:1, ease:'expo.inOut' }, 0.08);
-      if (navRef.current) tl.to(navRef.current, { y: -120, opacity: 0, duration:1.1, ease:'expo.inOut' }, 0.08);
-      if (headerRef.current) tl.to(headerRef.current, { y: -12, duration:1.1, ease:'expo.inOut' }, 0.08);
+      if (navRef.current) tl.to(navRef.current, { y: -220, opacity: 0, duration:1.1, ease:'expo.inOut' }, 0.08);
+      if (headerRef.current) tl.to(headerRef.current, { y: -120, opacity: 0, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
