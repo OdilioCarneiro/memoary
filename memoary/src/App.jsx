@@ -391,9 +391,10 @@ function BookViewer({ onLoginClick, pages }) {
               </nav>
             )}
           </div>
-          {/* close scale wrapper */}
-          </div>
+          {/* close bookOuter */}
         </div>
+        {/* close scale wrapper */}
+      </div>
       </div>
 
       {/* ── Photo lightbox ── */}
