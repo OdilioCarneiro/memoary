@@ -545,7 +545,7 @@ function PageContent({ page, onPhotoClick }) {
               <figcaption style={{ 
                 position:'absolute', bottom:0, left:0, right:0, 
                 background:'rgba(253,249,244,0.96)', backdropFilter:'blur(8px)', 
-                padding:'6px 10px', fontSize:10, 
+                padding:'6px 10px', fontSize:15, 
                 fontFamily:'var(--f-display)', fontStyle:'italic', 
                 letterSpacing:'0.04em', 
                 color:'#222', // 🔥 Texto bem escuro para legibilidade perfeita
@@ -825,8 +825,8 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
         style={{
           display:'flex',
           flexDirection: isMobileModal ? 'column' : 'row',
-          width: isMobileModal ? '100vw' : 'min(94vw, 1080px)',
-          height: isMobileModal ? '100dvh' : 'min(92vh, 700px)',
+          width: isMobileModal ? '100vw' : 'min(200vw, 1080px)',
+          height: isMobileModal ? '100dvh' : 'min(200vh, 700px)',
           borderRadius: isMobileModal ? 0 : 14,
           overflow:'hidden',
           background:'var(--white)',
