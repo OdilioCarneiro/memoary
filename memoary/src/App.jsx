@@ -911,20 +911,6 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
             </button>
           )}
 
-          {/* Botão de fechar no canto (visível em mobile) */}
-          <button
-            onClick={onClose}
-            style={{
-              position:'absolute', top:14, right:14, zIndex:10,
-              width:36, height:36, borderRadius:'50%',
-              background:'rgba(0,0,0,0.45)', border:'1px solid rgba(255,255,255,0.15)',
-              color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
-              cursor:'pointer', backdropFilter:'blur(8px)',
-            }}
-          >
-            <IcoClose />
-          </button>
-
         </div>
 
         {/* ── Painel de comentários ── */}
