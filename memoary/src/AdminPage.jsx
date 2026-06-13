@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Rnd } from 'react-rnd';
 import './AdminPage.css';
 
@@ -24,11 +24,38 @@ export default function AdminPage() {
   const [activePage, setActivePage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3200);
   }, []);
+
+  const uploadToCloudinary = useCallback(async (file) => {
+    const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+    if (!cloud || !preset) {
+      showToast('Cloudinary não está configurado (VITE variables).', 'error');
+      return null;
+    }
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', preset);
+    try {
+      setUploading(true);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/upload`, { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.secure_url) return json.secure_url;
+      console.error('Cloudinary upload error', json);
+      showToast('Erro no upload para Cloudinary', 'error');
+      return null;
+    } catch (e) {
+      console.error(e);
+      showToast('Erro de conexão no upload', 'error');
+      return null;
+    } finally { setUploading(false); }
+  }, [showToast]);
 
   useEffect(() => {
     async function load() {
@@ -375,13 +402,29 @@ export default function AdminPage() {
               {/* URL */}
               <div className="admin-field-group">
                 <label className="admin-label">URL da Imagem</label>
-                <input
-                  type="text"
-                  className="admin-input"
-                  placeholder="https://..."
-                  value={selectedEl.url}
-                  onChange={e => updateEl(selectedEl.id, { url: e.target.value })}
-                />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    className="admin-input"
+                    placeholder="https://..."
+                    value={selectedEl.url}
+                    onChange={e => updateEl(selectedEl.id, { url: e.target.value })}
+                    style={{ flex: 1 }}
+                  />
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                    const f = e.target.files && e.target.files[0];
+                    if (!f) return;
+                    const url = await uploadToCloudinary(f);
+                    if (url) updateEl(selectedEl.id, { url });
+                    e.target.value = null;
+                  }} />
+                  <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading} title="Enviar do dispositivo">
+                    {uploading ? 'Enviando…' : 'Upload'}
+                  </button>
+                </div>
+                <small style={{ display: 'block', marginTop: 6, color: '#8b8679' }}>
+                  Ou cole uma URL. Para upload direto, configure <strong>VITE_CLOUDINARY_CLOUD_NAME</strong> e <strong>VITE_CLOUDINARY_UPLOAD_PRESET</strong>.
+                </small>
               </div>
 
               {/* Legenda */}

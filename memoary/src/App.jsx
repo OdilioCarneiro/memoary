@@ -76,6 +76,15 @@ const IcoNavRight = () => (
   </svg>
 );
 
+// Helper para gerar URL do Cloudinary (usa fetch se configurado em Vite: VITE_CLOUDINARY_CLOUD_NAME)
+function cloudinaryUrl(src, opts = {}) {
+  if (!src) return src;
+  const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
+  if (!cloud) return src; // sem configuração, retorna a URL original
+  const transform = opts.transform || 'f_auto,q_auto,w_1200';
+  return `https://res.cloudinary.com/${cloud}/image/fetch/${transform}/${encodeURIComponent(src)}`;
+}
+
 /* ══════════════════════════════════════════════
    1.  ROOT ORCHESTRATOR
 ══════════════════════════════════════════════ */
@@ -195,13 +204,13 @@ function BookViewer({ onLoginClick, pages }) {
     pages.flatMap(pg =>
       (pg.elementos ?? [])
         .filter(el => el.tipo === 'imagem' && el.url)
-        .map(el => ({ id: el.id ?? el.url, url: el.url, legenda: el.legenda ?? '' }))
+        .map(el => ({ id: el.id ?? el.url, url: cloudinaryUrl(el.url), originalUrl: el.url, legenda: el.legenda ?? '' }))
     )
   , [pages]);
 
   const openPhoto = useCallback((el) => {
     setPhotoModal({
-      photo: { id: el.id ?? el.url, url: el.url, legenda: el.legenda ?? '' },
+      photo: { id: el.id ?? el.url, url: cloudinaryUrl(el.url), legenda: el.legenda ?? '' },
       allPhotos,
     });
   }, [allPhotos]);
@@ -527,7 +536,7 @@ function PageContent({ page, onPhotoClick }) {
               pointerEvents: 'auto', zIndex: 10
             }}
           >
-            <img src={el.url} alt={el.legenda ?? 'Foto do anuário'} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', backgroundColor:'#f5f5f5' }} loading="lazy" draggable={false} />
+            <img src={cloudinaryUrl(el.url)} alt={el.legenda ?? 'Foto do anuário'} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', backgroundColor:'#f5f5f5' }} loading="lazy" draggable={false} />
             
             {onPhotoClick && (
               <motion.div variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }} transition={{ duration: 0.2 }}
