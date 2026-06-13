@@ -401,7 +401,7 @@ export default function AdminPage() {
 
               {/* URL */}
               <div className="admin-field-group">
-                <label className="admin-label">URL da Imagem</label>
+                <label className="admin-label" style={{ display: 'block', marginBottom: 6 }}>URL da Imagem</label>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     type="text"
