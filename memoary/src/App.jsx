@@ -258,12 +258,19 @@ const getSpread = useCallback((idx) => {
     animate(flipMV, 180, { duration: 0.78, ease: [0.4, 0.0, 0.2, 1.0], onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); } });
   }, [isFlipping, bookIsOpen, spreadIdx, flipMV]);
 
-  const flipVisible = useMemo(() => {
-    if (!flipState) return null;
-    const { dir, fromSpread, toSpread } = flipState;
-    const from = getSpread(fromSpread); const to = getSpread(toSpread);
-    return { bgLeft: to.left, bgRight: to.right, leafFront: dir === 'fwd' ? from.right : from.left, leafBack: dir === 'fwd' ? to.left : to.right, dir };
-  }, [flipState, getSpread]);
+ const flipVisible = useMemo(() => {
+  if (!flipState) return null;
+  const { dir, fromSpread, toSpread } = flipState;
+  const from = getSpread(fromSpread);
+  const to   = getSpread(toSpread);
+  return {
+    bgLeft:    to.left,
+    bgRight:   to.right,
+    leafFront: dir === 'fwd' ? from.right : from.left,
+    leafBack:  dir === 'fwd' ? to.left    : to.right,
+    dir,
+  };
+}, [flipState, getSpread]);
 
   // 🔥 2. ANIMAÇÕES SEPARADAS POR TAMANHO DE TELA E SOMBRAS MAIS FORTES
  useGSAP(() => {
@@ -365,12 +372,13 @@ const getSpread = useCallback((idx) => {
             <div className="book-fore-edge" style={{ left:BOOK_W, width:FORE_EDGE_W }} />
 
             <StaticSpread
-              left ={flipVisible ? flipVisible.bgLeft  : curSpread.left}
-              right={flipVisible ? flipVisible.bgRight : curSpread.right}
-              spreadIdx={flipState ? flipState.toSpread : spreadIdx}
-              zIndex={2}
-              onPhotoClick={openPhoto}
-            />
+  left ={flipVisible ? flipVisible.bgLeft  : curSpread.left}
+  right={flipVisible ? flipVisible.bgRight : curSpread.right}
+  spreadIdx={flipState ? flipState.toSpread : spreadIdx}
+  zIndex={2}
+  onPhotoClick={!flipState ? openPhoto : undefined}
+/>
+
 
             {flipState && flipVisible && (
               <FlipLeaf
@@ -445,18 +453,29 @@ function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
   const isFirst = spreadIdx < 0;
   return (
     <>
-      {/* 1º A ESQUERDA: É renderizada por baixo, sem invadir a aba da direita */}
+      {/* PÁGINA ESQUERDA — posicionada normalmente, sem rotateY */}
       {spreadIdx >= 0 && (
-        <div className="static-page" style={{ zIndex }}>
-          <div className="page-face page-face--left">
-            {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
-            <div className="page-rule" />
-            <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
-          </div>
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex,
+          overflow: 'hidden',
+          borderRadius: '5px 2px 2px 5px',
+          background: 'linear-gradient(270deg, #a8a39a 0%, #cdc8bf 1%, #e5e0d6 3%, var(--paper) 100%)',
+        }}>
+          {/* Sombra da lombada direita */}
+          <div style={{
+            position: 'absolute', right: 0, top: 0,
+            width: 52, height: '100%', zIndex: 2, pointerEvents: 'none',
+            background: 'linear-gradient(270deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.04) 60%, transparent 100%)',
+          }} />
+          <div className="page-rule" />
+          <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
+          {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
         </div>
       )}
 
-      {/* 2º A DIREITA: Renderizada por último, fica sempre na frente e 100% clicável */}
+      {/* PÁGINA DIREITA — igual ao original */}
       <div className="static-page" style={{ zIndex }}>
         <div className="page-face page-face--right">
           {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={isFirst} />}
