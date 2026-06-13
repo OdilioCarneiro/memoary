@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 
 /* =============================================
@@ -61,15 +60,8 @@
   white-space: nowrap;
 }
 
-.admin-toast--success {
-  background: var(--admin-success);
-  color: #fff;
-}
-
-.admin-toast--error {
-  background: var(--admin-danger);
-  color: #fff;
-}
+.admin-toast--success { background: var(--admin-success); color: #fff; }
+.admin-toast--error   { background: var(--admin-danger);  color: #fff; }
 
 @keyframes toastSlideDown {
   from { opacity: 0; transform: translateX(-50%) translateY(-14px); }
@@ -77,10 +69,10 @@
 }
 
 /* =============================================
-   SIDEBAR — LISTA DE PÁGINAS
+   SIDEBAR
    ============================================= */
 .admin-sidebar {
-  width: 264px;
+  width: 240px;
   background: var(--admin-surface);
   border-right: 1px solid var(--admin-border);
   display: flex;
@@ -149,20 +141,17 @@
 .admin-sidebar__list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 14px 24px;
+  padding: 10px 12px 24px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   scrollbar-width: thin;
   scrollbar-color: var(--admin-border) transparent;
 }
 
 .admin-sidebar__list::-webkit-scrollbar { width: 4px; }
 .admin-sidebar__list::-webkit-scrollbar-track { background: transparent; }
-.admin-sidebar__list::-webkit-scrollbar-thumb {
-  background: var(--admin-border);
-  border-radius: 4px;
-}
+.admin-sidebar__list::-webkit-scrollbar-thumb { background: var(--admin-border); border-radius: 4px; }
 
 .admin-sidebar__empty {
   text-align: center;
@@ -172,21 +161,19 @@
   line-height: 1.6;
 }
 
-/* Page cards */
+/* ── Page / Spread cards na sidebar ── */
 .admin-page-card {
-  padding: 12px 13px;
+  padding: 10px 11px;
   background: var(--admin-surface-2);
   border: 1.5px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   cursor: pointer;
-  position: relative;
   transition: all var(--admin-transition);
 }
 
 .admin-page-card:hover {
   border-color: rgba(200,170,105,0.45);
   background: var(--admin-surface);
-  transform: translateX(2px);
 }
 
 .admin-page-card--active {
@@ -195,13 +182,35 @@
   box-shadow: 0 0 0 3px rgba(200,170,105,0.1);
 }
 
-/* Miniatura */
+/* Spread card (engloba os dois lados) */
+.admin-spread-card {
+  padding: 10px;
+  background: var(--admin-surface-2);
+  border: 1.5px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  transition: all var(--admin-transition);
+}
+
+.admin-spread-card:hover {
+  border-color: rgba(200,170,105,0.45);
+  background: var(--admin-surface);
+  transform: translateX(2px);
+}
+
+.admin-spread-card--active {
+  background: #fdf8ec;
+  border-color: var(--admin-gold) !important;
+  box-shadow: 0 0 0 3px rgba(200,170,105,0.1);
+}
+
+/* Thumb miniatura */
 .admin-page-card__thumb {
   width: 100%;
-  height: 72px;
+  height: 56px;
   background: var(--admin-surface-3);
   border-radius: var(--admin-radius-sm);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   overflow: hidden;
   position: relative;
   border: 1px solid var(--admin-border);
@@ -234,13 +243,13 @@
 
 .admin-page-card__label {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--admin-text-primary);
 }
 
 .admin-page-card__count {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--admin-text-muted);
   margin-top: 1px;
   font-weight: 400;
@@ -251,10 +260,10 @@
   border: none;
   cursor: pointer;
   color: var(--admin-text-muted);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 300;
   line-height: 1;
-  padding: 4px 6px;
+  padding: 3px 5px;
   border-radius: var(--admin-radius-sm);
   transition: all var(--admin-transition);
   opacity: 0.5;
@@ -281,7 +290,9 @@
   background-image:
     radial-gradient(circle at 25% 25%, rgba(255,255,255,0.04) 0%, transparent 50%),
     radial-gradient(circle at 75% 75%, rgba(0,0,0,0.03) 0%, transparent 50%);
+  /* Permite scroll horizontal para o spread duplo */
   overflow: auto;
+  min-width: 0;
 }
 
 /* Toolbar */
@@ -297,6 +308,7 @@
   top: 0;
   z-index: 10;
   box-shadow: var(--admin-shadow-sm);
+  flex-shrink: 0;
 }
 
 .admin-toolbar__spacer { flex: 1; }
@@ -305,11 +317,12 @@
   font-size: 12px;
   color: var(--admin-text-muted);
   font-weight: 400;
+  white-space: nowrap;
 }
 
 /* Toolbar buttons */
 .admin-btn {
-  padding: 9px 18px;
+  padding: 9px 16px;
   border: none;
   border-radius: var(--admin-radius-sm);
   font-weight: 600;
@@ -321,6 +334,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  white-space: nowrap;
 }
 
 .admin-btn--primary {
@@ -328,10 +342,15 @@
   color: #fff;
 }
 
-.admin-btn--primary:hover {
+.admin-btn--primary:hover:not(:disabled) {
   background: #2f2717;
   transform: translateY(-1px);
   box-shadow: var(--admin-shadow-sm);
+}
+
+.admin-btn--primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .admin-btn--save {
@@ -352,22 +371,17 @@
   opacity: 0.65;
 }
 
-.admin-btn__icon {
-  font-size: 14px;
-  opacity: 0.85;
-}
-
-/* Canvas scroll area */
+/* Canvas scroll area — espaço com padding generoso para o spread duplo caber */
 .admin-canvas__scroll {
-  padding: 44px 24px 96px;
+  padding: 40px 48px 96px;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100%;
-  width: 100%;
+  min-width: max-content; /* evita comprimir o spread */
 }
 
-/* O "palco" — página do livro */
+/* Palco de página única */
 .admin-stage {
   background: #fefcf8;
   box-shadow:
@@ -376,16 +390,11 @@
     inset 0 0 0 1px rgba(200,190,170,0.15);
   position: relative;
   overflow: hidden;
-  border-radius: 3px 8px 8px 3px;
-  background-image: linear-gradient(
-    to right,
-    #bab4a4 0%, #d8d4c8 1.5%, #f5f2ec 3.5%, #fefcf8 100%
-  );
   cursor: default;
   flex-shrink: 0;
 }
 
-/* Sombra da lombada */
+/* Sombra da lombada — agora injetada inline por lado */
 .admin-stage__spine-shadow {
   position: absolute;
   left: 0; top: 0; bottom: 0;
@@ -395,7 +404,6 @@
   z-index: 1;
 }
 
-/* Guia de margens */
 .admin-stage__guide {
   position: absolute;
   inset: 26px;
@@ -405,7 +413,6 @@
   z-index: 1;
 }
 
-/* Empty state do palco */
 .admin-stage__empty {
   position: absolute;
   inset: 0;
@@ -415,6 +422,7 @@
   justify-content: center;
   gap: 14px;
   pointer-events: none;
+  z-index: 0;
 }
 
 .admin-stage__empty-icon {
@@ -442,17 +450,17 @@
   line-height: 1.6;
 }
 
-/* Legenda abaixo do palco */
 .admin-stage__caption {
-  margin-top: 14px;
+  margin-top: 10px;
   font-size: 10px;
   color: var(--admin-text-muted);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   opacity: 0.7;
+  text-align: center;
 }
 
-/* Canvas empty state (sem página selecionada) */
+/* Placeholder (sem spread selecionado) */
 .admin-canvas__placeholder {
   flex: 1;
   display: flex;
@@ -460,6 +468,8 @@
   justify-content: center;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  min-width: 0;
 }
 
 .admin-canvas__placeholder-icon {
@@ -500,7 +510,7 @@
    PAINEL DE PROPRIEDADES
    ============================================= */
 .admin-properties {
-  width: 264px;
+  width: 248px;
   background: var(--admin-surface);
   border-left: 1px solid var(--admin-border);
   display: flex;
@@ -532,10 +542,7 @@
 
 .admin-properties__body::-webkit-scrollbar { width: 4px; }
 .admin-properties__body::-webkit-scrollbar-track { background: transparent; }
-.admin-properties__body::-webkit-scrollbar-thumb {
-  background: var(--admin-border);
-  border-radius: 4px;
-}
+.admin-properties__body::-webkit-scrollbar-thumb { background: var(--admin-border); border-radius: 4px; }
 
 .admin-properties__empty {
   text-align: center;
@@ -547,17 +554,8 @@
 }
 
 /* Form fields */
-.admin-field {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.admin-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.admin-field { display: flex; flex-direction: column; gap: 14px; }
+.admin-field-group { display: flex; flex-direction: column; gap: 6px; }
 
 .admin-label {
   display: block;
@@ -592,28 +590,18 @@
   padding: 7px 6px;
 }
 
-/* Image preview */
 .admin-preview {
   width: 100%;
-  height: 118px;
+  height: 110px;
   border-radius: var(--admin-radius-sm);
   overflow: hidden;
   border: 1px solid var(--admin-border);
   background: var(--admin-surface-3);
 }
 
-.admin-preview img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-}
+.admin-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Grid para posição/tamanho */
-.admin-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
+.admin-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 .admin-grid-label {
   font-size: 10px;
@@ -624,18 +612,9 @@
   letter-spacing: 0.05em;
 }
 
-/* Divider */
-.admin-divider {
-  height: 1px;
-  background: var(--admin-border);
-  margin: 4px 0;
-}
+.admin-divider { height: 1px; background: var(--admin-border); margin: 4px 0; }
 
-/* Quick action buttons */
-.admin-quick-actions {
-  display: flex;
-  gap: 7px;
-}
+.admin-quick-actions { display: flex; gap: 7px; }
 
 .admin-btn-quick {
   flex: 1;
@@ -659,7 +638,6 @@
   color: var(--admin-text-primary);
 }
 
-/* Delete button */
 .admin-btn-delete {
   width: 100%;
   padding: 10px 14px;
@@ -684,7 +662,7 @@
 }
 
 /* =============================================
-   LOADING STATE
+   LOADING
    ============================================= */
 .admin-loading {
   display: flex;
@@ -711,35 +689,63 @@
   animation: adminSpin 0.8s linear infinite;
 }
 
-.admin-loading__text {
-  font-size: 13px;
-  letter-spacing: 0.04em;
-}
+.admin-loading__text { font-size: 13px; letter-spacing: 0.04em; }
 
-@keyframes adminSpin {
-  to { transform: rotate(360deg); }
-}
+@keyframes adminSpin { to { transform: rotate(360deg); } }
 
 /* =============================================
-   DRAG HANDLE (Rnd elements styling)
+   RND selected ring
    ============================================= */
 .rnd-element--selected {
   box-shadow: 0 0 0 2px var(--admin-gold), 0 0 0 5px rgba(200,170,105,0.18) !important;
   border-radius: 4px;
 }
+
 /* =============================================
-   SPREAD CARD (par esq + dir na sidebar)
+   RESPONSIVO
    ============================================= */
-.admin-spread-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  background: var(--admin-surface-3);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
+@media (max-width: 1100px) {
+  .admin-properties { width: 220px; }
+  .admin-sidebar    { width: 210px; }
 }
 
-.admin-spread-card .admin-page-card {
-  margin: 0;
+@media (max-width: 860px) {
+  .admin-root { flex-direction: column; overflow: auto; height: auto; min-height: calc(100vh - 75px); }
+
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--admin-border);
+    flex-direction: column;
+  }
+
+  .admin-sidebar__list {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    padding: 10px 12px;
+    gap: 8px;
+    max-height: 160px;
+  }
+
+  .admin-spread-card { flex-shrink: 0; width: 160px; }
+
+  .admin-canvas { min-height: 600px; }
+
+  .admin-properties {
+    width: 100%;
+    max-height: 280px;
+    border-left: none;
+    border-top: 1px solid var(--admin-border);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 540px) {
+  .admin-canvas__scroll { padding: 24px 16px 60px; }
+  .admin-toolbar { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+  .admin-toolbar__spacer { display: none; }
+  .admin-toolbar__info { display: none; }
 }
