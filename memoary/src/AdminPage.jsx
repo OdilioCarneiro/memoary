@@ -48,10 +48,11 @@ export default function AdminPage() {
       const json = await res.json();
       if (json.secure_url) return json.secure_url;
       console.error('Cloudinary upload error', json);
-      showToast('Erro no upload para Cloudinary', 'error');
+      const message = json.error?.message || 'Erro no upload para Cloudinary';
+      showToast(`Cloudinary: ${message}`, 'error');
       return null;
     } catch (e) {
-      console.error(e);
+      console.error('Cloudinary upload exception', e);
       showToast('Erro de conexão no upload', 'error');
       return null;
     } finally { setUploading(false); }
