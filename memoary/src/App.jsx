@@ -453,29 +453,16 @@ function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
   const isFirst = spreadIdx < 0;
   return (
     <>
-      {/* PÁGINA ESQUERDA — posicionada normalmente, sem rotateY */}
       {spreadIdx >= 0 && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex,
-          overflow: 'hidden',
-          borderRadius: '5px 2px 2px 5px',
-          background: 'linear-gradient(270deg, #a8a39a 0%, #cdc8bf 1%, #e5e0d6 3%, var(--paper) 100%)',
-        }}>
-          {/* Sombra da lombada direita */}
-          <div style={{
-            position: 'absolute', right: 0, top: 0,
-            width: 52, height: '100%', zIndex: 2, pointerEvents: 'none',
-            background: 'linear-gradient(270deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.04) 60%, transparent 100%)',
-          }} />
-          <div className="page-rule" />
-          <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
-          {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
+        <div className="static-page" style={{ zIndex }}>
+          <div className="page-face page-face--left">
+            {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
+            <div className="page-rule" />
+            <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
+          </div>
         </div>
       )}
 
-      {/* PÁGINA DIREITA — igual ao original */}
       <div className="static-page" style={{ zIndex }}>
         <div className="page-face page-face--right">
           {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={isFirst} />}

@@ -526,7 +526,7 @@ html, body, #root {
 /* Left page (recto) — gutter shadow from right spine */
 .page-face--left {
   border-radius: 5px 2px 2px 5px;
-  transform: rotateY(180deg);
+  /* SEM rotateY — página esquerda fica visível normalmente */
   background: linear-gradient(
     270deg,
     #a8a39a 0%,
