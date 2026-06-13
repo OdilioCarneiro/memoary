@@ -113,7 +113,15 @@ export default function App() {
         const r = await fetch(`${API_URL}/api/anuario`);
         const j = await r.json();
         if (!active) return;
-        if (j.success) setAnuarioData(j.data);
+        if (j.success) {
+          let data = j.data;
+          // Garante número par de páginas para spreads completos (cada spread = 2 páginas)
+          if (data.length % 2 === 1) {
+            // Se ímpar, insere uma página vazia no final para completar o par
+            data = [...data, { _id: 'spacer-' + Date.now(), elementos: [], tipoLayout: 'grid' }];
+          }
+          setAnuarioData(data);
+        }
       } catch (e) { console.error(e); }
     };
 

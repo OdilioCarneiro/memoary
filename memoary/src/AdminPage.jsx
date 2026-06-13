@@ -63,7 +63,18 @@ export default function AdminPage() {
       try {
         const res = await fetch(`${API_URL}/api/anuario`);
         const json = await res.json();
-        if (json.success) setPages(json.data);
+        if (json.success) {
+          let pagesData = json.data;
+          // Garante que há sempre um número par de páginas (para spreads completos no livro)
+          if (pagesData.length % 2 === 1) {
+            const res2 = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
+            const json2 = await res2.json();
+            if (json2.success) {
+              pagesData = [...pagesData, json2.data];
+            }
+          }
+          setPages(pagesData);
+        }
       } catch (e) {
         console.error('Erro ao carregar:', e);
         showToast('Erro ao carregar páginas', 'error');
@@ -76,6 +87,7 @@ export default function AdminPage() {
 
   const handleNovaPagina = async () => {
     try {
+      // Cria a primeira página
       const res = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
       const json = await res.json();
       if (json.success) {
@@ -83,6 +95,15 @@ export default function AdminPage() {
         setActivePage(json.data);
         setSelectedId(null);
         showToast('Página criada com sucesso');
+        
+        // Se agora o número de páginas é ímpar, cria a segunda página do pair automaticamente
+        if ((pages.length + 1) % 2 === 1) {
+          const res2 = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
+          const json2 = await res2.json();
+          if (json2.success) {
+            setPages(p => [...p, json2.data]);
+          }
+        }
       }
     } catch (e) {
       showToast('Erro ao criar página', 'error', {e});
