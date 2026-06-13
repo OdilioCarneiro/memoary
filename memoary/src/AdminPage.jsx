@@ -104,23 +104,33 @@ export default function AdminPage() {
     }
   };
 
-  const salvarPagina = async () => {
-    if (!activePage || isSaving) return;
+  const savePageToBackend = useCallback(async (pageToSave) => {
+    if (!pageToSave || isSaving) return false;
     setIsSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/anuario/${activePage._id}`, {
+      const res = await fetch(`${API_URL}/api/anuario/${pageToSave._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ elementos: activePage.elementos }),
+        body: JSON.stringify({ elementos: pageToSave.elementos }),
       });
       const json = await res.json();
-      if (json.success) showToast('Alterações salvas');
-      else showToast('Erro ao salvar', 'error');
+      if (json.success) {
+        showToast('Alterações salvas');
+        return true;
+      }
+      showToast('Erro ao salvar', 'error');
+      return false;
     } catch (e) {
-      showToast('Erro de conexão', 'error', {e});
+      showToast('Erro de conexão', 'error', { e });
+      return false;
     } finally {
       setIsSaving(false);
     }
+  }, [isSaving, showToast]);
+
+  const salvarPagina = async () => {
+    if (!activePage) return;
+    await savePageToBackend(activePage);
   };
 
   const updateActiveLocal = useCallback((newElements) => {
@@ -416,7 +426,11 @@ export default function AdminPage() {
                     const f = e.target.files && e.target.files[0];
                     if (!f) return;
                     const url = await uploadToCloudinary(f);
-                    if (url) updateEl(selectedEl.id, { url });
+                    if (url) {
+                      updateEl(selectedEl.id, { url });
+                      // salva imediatamente a página quando o upload terminar
+                      await savePageToBackend({ ...activePage, elementos: activePage.elementos.map(el => el.id === selectedEl.id ? { ...el, url } : el) });
+                    }
                     e.target.value = null;
                   }} />
                   <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading} title="Enviar do dispositivo">
