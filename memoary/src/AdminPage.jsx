@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [toast, setToast] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [spreadPagePosition, setSpreadPagePosition] = useState('left'); // 'left' ou 'right'
   const fileInputRef = useRef(null);
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -181,6 +182,26 @@ export default function AdminPage() {
 
   const selectedEl = activePage?.elementos?.find(e => e.id === selectedId) || null;
 
+  // Agrupa páginas em spreads (pares)
+  const spreads = [];
+  for (let i = 0; i < pages.length; i += 2) {
+    spreads.push({
+      idx: Math.floor(i / 2),
+      left: pages[i] || null,
+      right: pages[i + 1] || null,
+    });
+  }
+
+  const handleSelectSpread = (spread, position = 'left') => {
+    const page = position === 'left' ? spread.left : spread.right;
+    if (page) {
+      setActivePage(page);
+      setSpreadPagePosition(position);
+      setSelectedId(null);
+    }
+  };
+
+
   /* ===================================================
      LOADING
      =================================================== */
@@ -225,58 +246,109 @@ export default function AdminPage() {
         </div>
 
         <div className="admin-sidebar__list">
-          {pages.length === 0 && (
+          {spreads.length === 0 && (
             <p className="admin-sidebar__empty">
               Nenhuma página ainda.<br />
               Crie a primeira para começar.
             </p>
           )}
 
-          {pages.map((page, idx) => {
-            const isActive = activePage?._id === page._id;
+          {spreads.map((spread) => {
+            const isActiveLeft = activePage?._id === spread.left?._id && spreadPagePosition === 'left';
+            const isActiveRight = activePage?._id === spread.right?._id && spreadPagePosition === 'right';
+            
             return (
-              <div
-                key={page._id}
-                className={`admin-page-card${isActive ? ' admin-page-card--active' : ''}`}
-                onClick={() => { setActivePage(page); setSelectedId(null); }}
-              >
-                {/* Miniatura */}
-                <div className="admin-page-card__thumb">
-                  {page.elementos?.filter(e => e.tipo === 'imagem' && e.url).slice(0, 4).map(el => (
-                    <img
-                      key={el.id}
-                      src={el.url}
-                      alt=""
-                      className="admin-page-card__thumb-img"
-                      style={{
-                        left: `${(el.x / CANVAS_W) * 100}%`,
-                        top: `${(el.y / CANVAS_H) * 100}%`,
-                        width: `${(el.largura / CANVAS_W) * 100}%`,
-                        height: `${(el.altura / CANVAS_H) * 100}%`,
-                      }}
-                    />
-                  ))}
-                  {(!page.elementos || page.elementos.length === 0) && (
-                    <div className="admin-page-card__thumb-empty">
-                      <div className="admin-page-card__thumb-empty-line" />
+              <div key={`spread-${spread.idx}`} className="admin-spread-card">
+                {/* Página Esquerda */}
+                <div
+                  className={`admin-page-card${isActiveLeft ? ' admin-page-card--active' : ''}`}
+                  onClick={() => handleSelectSpread(spread, 'left')}
+                >
+                  <div className="admin-page-card__thumb">
+                    {spread.left?.elementos?.filter(e => e.tipo === 'imagem' && e.url).slice(0, 4).map(el => (
+                      <img
+                        key={el.id}
+                        src={el.url}
+                        alt=""
+                        className="admin-page-card__thumb-img"
+                        style={{
+                          left: `${(el.x / CANVAS_W) * 100}%`,
+                          top: `${(el.y / CANVAS_H) * 100}%`,
+                          width: `${(el.largura / CANVAS_W) * 100}%`,
+                          height: `${(el.altura / CANVAS_H) * 100}%`,
+                        }}
+                      />
+                    ))}
+                    {(!spread.left?.elementos || spread.left.elementos.length === 0) && (
+                      <div className="admin-page-card__thumb-empty">
+                        <div className="admin-page-card__thumb-empty-line" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="admin-page-card__meta">
+                    <div>
+                      <span className="admin-page-card__label">Esq</span>
+                      <span className="admin-page-card__count">
+                        {spread.left?.elementos?.length || 0}
+                      </span>
                     </div>
-                  )}
+                    {spread.left && (
+                      <button
+                        className="admin-page-card__delete"
+                        onClick={e => { e.stopPropagation(); handleExcluirPagina(spread.left._id); }}
+                        title="Remover página"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="admin-page-card__meta">
-                  <div>
-                    <span className="admin-page-card__label">Página {idx + 1}</span>
-                    <span className="admin-page-card__count">
-                      {page.elementos?.length || 0} {(page.elementos?.length !== 1) ? 'fotos' : 'foto'}
-                    </span>
+                {/* Página Direita */}
+                <div
+                  className={`admin-page-card${isActiveRight ? ' admin-page-card--active' : ''}`}
+                  onClick={() => handleSelectSpread(spread, 'right')}
+                >
+                  <div className="admin-page-card__thumb">
+                    {spread.right?.elementos?.filter(e => e.tipo === 'imagem' && e.url).slice(0, 4).map(el => (
+                      <img
+                        key={el.id}
+                        src={el.url}
+                        alt=""
+                        className="admin-page-card__thumb-img"
+                        style={{
+                          left: `${(el.x / CANVAS_W) * 100}%`,
+                          top: `${(el.y / CANVAS_H) * 100}%`,
+                          width: `${(el.largura / CANVAS_W) * 100}%`,
+                          height: `${(el.altura / CANVAS_H) * 100}%`,
+                        }}
+                      />
+                    ))}
+                    {(!spread.right?.elementos || spread.right.elementos.length === 0) && (
+                      <div className="admin-page-card__thumb-empty">
+                        <div className="admin-page-card__thumb-empty-line" />
+                      </div>
+                    )}
                   </div>
-                  <button
-                    className="admin-page-card__delete"
-                    onClick={e => { e.stopPropagation(); handleExcluirPagina(page._id); }}
-                    title="Remover página"
-                  >
-                    ×
-                  </button>
+
+                  <div className="admin-page-card__meta">
+                    <div>
+                      <span className="admin-page-card__label">Dir</span>
+                      <span className="admin-page-card__count">
+                        {spread.right?.elementos?.length || 0}
+                      </span>
+                    </div>
+                    {spread.right && (
+                      <button
+                        className="admin-page-card__delete"
+                        onClick={e => { e.stopPropagation(); handleExcluirPagina(spread.right._id); }}
+                        title="Remover página"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -293,6 +365,47 @@ export default function AdminPage() {
               <button className="admin-btn admin-btn--primary" onClick={addPhoto}>
                 Adicionar Foto
               </button>
+              
+              {/* Botões de seleção Left/Right para spreads */}
+              <div style={{ display: 'flex', gap: 8, marginLeft: 12, borderLeft: '1px solid rgba(200,170,105,0.2)', paddingLeft: 12 }}>
+                <button 
+                  className={`admin-btn${spreadPagePosition === 'left' ? ' admin-btn--active' : ''}`}
+                  onClick={() => handleSelectSpread(spreads.find(s => s.left?._id === activePage?._id) || spreads[0], 'left')}
+                  title="Editar página esquerda"
+                  style={{
+                    background: spreadPagePosition === 'left' ? '#C8AA69' : 'transparent',
+                    color: spreadPagePosition === 'left' ? '#fff' : '#8b8679',
+                    border: '1px solid #C8AA69',
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  ← Esq
+                </button>
+                <button 
+                  className={`admin-btn${spreadPagePosition === 'right' ? ' admin-btn--active' : ''}`}
+                  onClick={() => handleSelectSpread(spreads.find(s => s.right?._id === activePage?._id) || spreads[0], 'right')}
+                  title="Editar página direita"
+                  style={{
+                    background: spreadPagePosition === 'right' ? '#C8AA69' : 'transparent',
+                    color: spreadPagePosition === 'right' ? '#fff' : '#8b8679',
+                    border: '1px solid #C8AA69',
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  Dir →
+                </button>
+              </div>
+              
               <div className="admin-toolbar__spacer" />
               <span className="admin-toolbar__info">
                 {activePage.elementos?.length || 0} elemento{activePage.elementos?.length !== 1 ? 's' : ''}
