@@ -14,9 +14,6 @@ const gerarId = () =>
 const CANVAS_W = 420;
 const CANVAS_H = 660;
 
-/* =====================================================
-   ADMIN PAGE
-   ===================================================== */
 export default function AdminPage() {
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +22,7 @@ export default function AdminPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [toast, setToast] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [spreadPagePosition, setSpreadPagePosition] = useState('left'); // 'left' ou 'right'
+  const [spreadPagePosition, setSpreadPagePosition] = useState('right');
   const fileInputRef = useRef(null);
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -48,12 +45,10 @@ export default function AdminPage() {
       const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/upload`, { method: 'POST', body: fd });
       const json = await res.json();
       if (json.secure_url) return json.secure_url;
-      console.error('Cloudinary upload error', json);
       const message = json.error?.message || 'Erro no upload para Cloudinary';
       showToast(`Cloudinary: ${message}`, 'error');
       return null;
     } catch (e) {
-      console.error('Cloudinary upload exception', e);
       showToast('Erro de conexão no upload', 'error');
       return null;
     } finally { setUploading(false); }
@@ -66,18 +61,18 @@ export default function AdminPage() {
         const json = await res.json();
         if (json.success) {
           let pagesData = json.data;
-          // Garante que há sempre um número par de páginas (para spreads completos no livro)
           if (pagesData.length % 2 === 1) {
-            const res2 = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
+            const res2 = await fetch(`${API_URL}/api/anuario/nova-pagina`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lado: 'direita' }),
+            });
             const json2 = await res2.json();
-            if (json2.success) {
-              pagesData = [...pagesData, json2.data];
-            }
+            if (json2.success) pagesData = [...pagesData, json2.data];
           }
           setPages(pagesData);
         }
       } catch (e) {
-        console.error('Erro ao carregar:', e);
         showToast('Erro ao carregar páginas', 'error');
       } finally {
         setIsLoading(false);
@@ -88,26 +83,29 @@ export default function AdminPage() {
 
   const handleNovaPagina = async () => {
     try {
-      // Cria a primeira página
-      const res = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
-      const json = await res.json();
-      if (json.success) {
-        setPages(p => [...p, json.data]);
-        setActivePage(json.data);
+      const [resL, resR] = await Promise.all([
+        fetch(`${API_URL}/api/anuario/nova-pagina`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lado: 'esquerda' }),
+        }),
+        fetch(`${API_URL}/api/anuario/nova-pagina`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lado: 'direita' }),
+        }),
+      ]);
+      const [jsonL, jsonR] = await Promise.all([resL.json(), resR.json()]);
+      if (jsonL.success && jsonR.success) {
+        const novas = [jsonL.data, jsonR.data];
+        setPages(p => [...p, ...novas]);
+        setActivePage(jsonL.data);
+        setSpreadPagePosition('left');
         setSelectedId(null);
-        showToast('Página criada com sucesso');
-        
-        // Se agora o número de páginas é ímpar, cria a segunda página do pair automaticamente
-        if ((pages.length + 1) % 2 === 1) {
-          const res2 = await fetch(`${API_URL}/api/anuario/nova-pagina`, { method: 'POST' });
-          const json2 = await res2.json();
-          if (json2.success) {
-            setPages(p => [...p, json2.data]);
-          }
-        }
+        showToast('Novo spread criado');
       }
     } catch (e) {
-      showToast('Erro ao criar página', 'error', {e});
+      showToast('Erro ao criar página', 'error');
     }
   };
 
@@ -122,7 +120,7 @@ export default function AdminPage() {
         showToast('Página removida');
       }
     } catch (e) {
-      showToast('Erro ao excluir', 'error', {e});
+      showToast('Erro ao excluir', 'error');
     }
   };
 
@@ -133,17 +131,17 @@ export default function AdminPage() {
       const res = await fetch(`${API_URL}/api/anuario/${pageToSave._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ elementos: pageToSave.elementos }),
+        body: JSON.stringify({
+          elementos: pageToSave.elementos,
+          lado: pageToSave.lado,
+        }),
       });
       const json = await res.json();
-      if (json.success) {
-        showToast('Alterações salvas');
-        return true;
-      }
+      if (json.success) { showToast('Alterações salvas'); return true; }
       showToast('Erro ao salvar', 'error');
       return false;
     } catch (e) {
-      showToast('Erro de conexão', 'error', { e });
+      showToast('Erro de conexão', 'error');
       return false;
     } finally {
       setIsSaving(false);
@@ -182,7 +180,6 @@ export default function AdminPage() {
 
   const selectedEl = activePage?.elementos?.find(e => e.id === selectedId) || null;
 
-  // Agrupa páginas em spreads (pares)
   const spreads = [];
   for (let i = 0; i < pages.length; i += 2) {
     spreads.push({
@@ -192,19 +189,23 @@ export default function AdminPage() {
     });
   }
 
-  const handleSelectSpread = (spread, position = 'left') => {
+  const handleSelectSpread = (spread, position) => {
     const page = position === 'left' ? spread.left : spread.right;
-    if (page) {
-      setActivePage(page);
-      setSpreadPagePosition(position);
-      setSelectedId(null);
-    }
+    if (!page) return;
+    setActivePage(page);
+    setSpreadPagePosition(position);
+    setSelectedId(null);
   };
 
+  const activeSpread = spreads.find(
+    s => s.left?._id === activePage?._id || s.right?._id === activePage?._id
+  ) || null;
 
-  /* ===================================================
-     LOADING
-     =================================================== */
+  const handleSwitchSide = (position) => {
+    if (!activeSpread) return;
+    handleSelectSpread(activeSpread, position);
+  };
+
   if (isLoading) {
     return (
       <div className="admin-loading">
@@ -216,20 +217,15 @@ export default function AdminPage() {
     );
   }
 
-  /* ===================================================
-     RENDER PRINCIPAL
-     =================================================== */
   return (
     <div className="admin-root">
 
-      {/* TOAST */}
       {toast && (
         <div className={`admin-toast admin-toast--${toast.type}`}>
           {toast.msg}
         </div>
       )}
 
-      {/* SIDEBAR — LISTA DE PÁGINAS */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar__header">
           <h2 className="admin-sidebar__title">Anuário</h2>
@@ -241,7 +237,7 @@ export default function AdminPage() {
         <div className="admin-sidebar__actions">
           <button className="admin-btn-new" onClick={handleNovaPagina}>
             <span className="admin-btn-new__icon">+</span>
-            Nova Página
+            Novo Spread
           </button>
         </div>
 
@@ -254,12 +250,12 @@ export default function AdminPage() {
           )}
 
           {spreads.map((spread) => {
-            const isActiveLeft = activePage?._id === spread.left?._id && spreadPagePosition === 'left';
-            const isActiveRight = activePage?._id === spread.right?._id && spreadPagePosition === 'right';
-            
+            const isActiveLeft  = activePage?._id === spread.left?._id;
+            const isActiveRight = activePage?._id === spread.right?._id;
+
             return (
               <div key={`spread-${spread.idx}`} className="admin-spread-card">
-                {/* Página Esquerda */}
+
                 <div
                   className={`admin-page-card${isActiveLeft ? ' admin-page-card--active' : ''}`}
                   onClick={() => handleSelectSpread(spread, 'left')}
@@ -272,10 +268,10 @@ export default function AdminPage() {
                         alt=""
                         className="admin-page-card__thumb-img"
                         style={{
-                          left: `${(el.x / CANVAS_W) * 100}%`,
-                          top: `${(el.y / CANVAS_H) * 100}%`,
-                          width: `${(el.largura / CANVAS_W) * 100}%`,
-                          height: `${(el.altura / CANVAS_H) * 100}%`,
+                          left:   `${(el.x       / CANVAS_W) * 100}%`,
+                          top:    `${(el.y       / CANVAS_H) * 100}%`,
+                          width:  `${(el.largura / CANVAS_W) * 100}%`,
+                          height: `${(el.altura  / CANVAS_H) * 100}%`,
                         }}
                       />
                     ))}
@@ -285,12 +281,11 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
-
                   <div className="admin-page-card__meta">
                     <div>
-                      <span className="admin-page-card__label">Esq</span>
+                      <span className="admin-page-card__label">← Esq</span>
                       <span className="admin-page-card__count">
-                        {spread.left?.elementos?.length || 0}
+                        {spread.left?.elementos?.length || 0} foto(s)
                       </span>
                     </div>
                     {spread.left && (
@@ -305,7 +300,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Página Direita */}
                 <div
                   className={`admin-page-card${isActiveRight ? ' admin-page-card--active' : ''}`}
                   onClick={() => handleSelectSpread(spread, 'right')}
@@ -318,10 +312,10 @@ export default function AdminPage() {
                         alt=""
                         className="admin-page-card__thumb-img"
                         style={{
-                          left: `${(el.x / CANVAS_W) * 100}%`,
-                          top: `${(el.y / CANVAS_H) * 100}%`,
-                          width: `${(el.largura / CANVAS_W) * 100}%`,
-                          height: `${(el.altura / CANVAS_H) * 100}%`,
+                          left:   `${(el.x       / CANVAS_W) * 100}%`,
+                          top:    `${(el.y       / CANVAS_H) * 100}%`,
+                          width:  `${(el.largura / CANVAS_W) * 100}%`,
+                          height: `${(el.altura  / CANVAS_H) * 100}%`,
                         }}
                       />
                     ))}
@@ -331,12 +325,11 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
-
                   <div className="admin-page-card__meta">
                     <div>
-                      <span className="admin-page-card__label">Dir</span>
+                      <span className="admin-page-card__label">Dir →</span>
                       <span className="admin-page-card__count">
-                        {spread.right?.elementos?.length || 0}
+                        {spread.right?.elementos?.length || 0} foto(s)
                       </span>
                     </div>
                     {spread.right && (
@@ -350,74 +343,75 @@ export default function AdminPage() {
                     )}
                   </div>
                 </div>
+
               </div>
             );
           })}
         </div>
       </aside>
 
-      {/* CANVAS CENTRAL */}
       <main className="admin-canvas">
         {activePage ? (
           <>
-            {/* Toolbar */}
             <div className="admin-toolbar">
               <button className="admin-btn admin-btn--primary" onClick={addPhoto}>
                 Adicionar Foto
               </button>
-              
-              {/* Botões de seleção Left/Right para spreads */}
-              <div style={{ display: 'flex', gap: 8, marginLeft: 12, borderLeft: '1px solid rgba(200,170,105,0.2)', paddingLeft: 12 }}>
-                <button 
-                  className={`admin-btn${spreadPagePosition === 'left' ? ' admin-btn--active' : ''}`}
-                  onClick={() => handleSelectSpread(spreads.find(s => s.left?._id === activePage?._id) || spreads[0], 'left')}
-                  title="Editar página esquerda"
-                  style={{
-                    background: spreadPagePosition === 'left' ? '#C8AA69' : 'transparent',
-                    color: spreadPagePosition === 'left' ? '#fff' : '#8b8679',
-                    border: '1px solid #C8AA69',
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    borderRadius: 4,
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  ← Esq
-                </button>
-                <button 
-                  className={`admin-btn${spreadPagePosition === 'right' ? ' admin-btn--active' : ''}`}
-                  onClick={() => handleSelectSpread(spreads.find(s => s.right?._id === activePage?._id) || spreads[0], 'right')}
-                  title="Editar página direita"
-                  style={{
-                    background: spreadPagePosition === 'right' ? '#C8AA69' : 'transparent',
-                    color: spreadPagePosition === 'right' ? '#fff' : '#8b8679',
-                    border: '1px solid #C8AA69',
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    borderRadius: 4,
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  Dir →
-                </button>
-              </div>
-              
+
+              {activeSpread && (
+                <div style={{
+                  display: 'flex', gap: 6, marginLeft: 12,
+                  borderLeft: '1px solid rgba(200,170,105,0.25)', paddingLeft: 12,
+                }}>
+                  <button
+                    onClick={() => handleSwitchSide('left')}
+                    disabled={!activeSpread.left}
+                    style={{
+                      padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                      borderRadius: 4, border: '1px solid #C8AA69', cursor: 'pointer',
+                      background: spreadPagePosition === 'left' ? '#C8AA69' : 'transparent',
+                      color:      spreadPagePosition === 'left' ? '#fff'    : '#8b8679',
+                      transition: 'all 0.18s',
+                      opacity: activeSpread.left ? 1 : 0.35,
+                    }}
+                  >
+                    ← Esquerda
+                  </button>
+                  <button
+                    onClick={() => handleSwitchSide('right')}
+                    disabled={!activeSpread.right}
+                    style={{
+                      padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                      borderRadius: 4, border: '1px solid #C8AA69', cursor: 'pointer',
+                      background: spreadPagePosition === 'right' ? '#C8AA69' : 'transparent',
+                      color:      spreadPagePosition === 'right' ? '#fff'    : '#8b8679',
+                      transition: 'all 0.18s',
+                      opacity: activeSpread.right ? 1 : 0.35,
+                    }}
+                  >
+                    Direita →
+                  </button>
+                </div>
+              )}
+
               <div className="admin-toolbar__spacer" />
+
               <span className="admin-toolbar__info">
-                {activePage.elementos?.length || 0} elemento{activePage.elementos?.length !== 1 ? 's' : ''}
+                {spreadPagePosition === 'left' ? '← Esquerda' : 'Direita →'}
+                {' · '}
+                {activePage.elementos?.length || 0} elemento(s)
               </span>
-              <button className="admin-btn admin-btn--save" onClick={salvarPagina} disabled={isSaving}>
+
+              <button
+                className="admin-btn admin-btn--save"
+                onClick={salvarPagina}
+                disabled={isSaving}
+              >
                 {isSaving ? 'Salvando…' : 'Salvar'}
               </button>
             </div>
 
-            {/* Scroll area */}
             <div className="admin-canvas__scroll">
-              {/* O Palco */}
               <div
                 className="admin-stage"
                 style={{ width: CANVAS_W, height: CANVAS_H }}
@@ -437,7 +431,6 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* ELEMENTOS ARRASTÁVEIS */}
                 {activePage.elementos?.map(el => (
                   <Rnd
                     key={el.id}
@@ -452,13 +445,9 @@ export default function AdminPage() {
                     })}
                     onClick={e => { e.stopPropagation(); setSelectedId(el.id); }}
                     style={{
-                      border: selectedId === el.id
-                        ? '2px solid #C8AA69'
-                        : '2px solid transparent',
+                      border: selectedId === el.id ? '2px solid #C8AA69' : '2px solid transparent',
                       cursor: 'move',
-                      boxShadow: selectedId === el.id
-                        ? '0 0 0 4px rgba(200,170,105,0.18)'
-                        : 'none',
+                      boxShadow: selectedId === el.id ? '0 0 0 4px rgba(200,170,105,0.18)' : 'none',
                       borderRadius: 4,
                       transition: 'box-shadow 0.15s, border-color 0.15s',
                     }}
@@ -472,8 +461,7 @@ export default function AdminPage() {
                       />
                     ) : (
                       <div style={{
-                        width: '100%', height: '100%',
-                        background: '#f0ece0',
+                        width: '100%', height: '100%', background: '#f0ece0',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         flexDirection: 'column', gap: 8, borderRadius: 2,
                         border: '1.5px dashed rgba(200,170,105,0.35)',
@@ -485,7 +473,7 @@ export default function AdminPage() {
                         }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(200,170,105,0.4)' }} />
                         </div>
-                        <span style={{ fontSize: 10, color: '#b0ab9e', textAlign: 'center', padding: '0 8px', lineHeight: 1.4, letterSpacing: '0.03em' }}>
+                        <span style={{ fontSize: 10, color: '#b0ab9e', textAlign: 'center', padding: '0 8px', lineHeight: 1.4 }}>
                           Cole a URL no painel lateral
                         </span>
                       </div>
@@ -493,13 +481,9 @@ export default function AdminPage() {
                     {el.legenda && (
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
-                        background: 'rgba(255,255,255,0.9)',
-                        padding: '5px 8px',
-                        fontSize: 10,
-                        fontFamily: "'Cormorant Garamond', serif",
-                        color: 'rgba(50,42,24,0.7)',
-                        textAlign: 'center',
-                        letterSpacing: '0.04em',
+                        background: 'rgba(255,255,255,0.9)', padding: '5px 8px',
+                        fontSize: 10, fontFamily: "'Cormorant Garamond', serif",
+                        color: 'rgba(50,42,24,0.7)', textAlign: 'center', letterSpacing: '0.04em',
                       }}>
                         {el.legenda}
                       </div>
@@ -509,7 +493,8 @@ export default function AdminPage() {
               </div>
 
               <p className="admin-stage__caption">
-                {CANVAS_W} × {CANVAS_H} px — Proporção A5
+                {spreadPagePosition === 'left' ? '← Esquerda' : 'Direita →'}
+                {' · '}{CANVAS_W} × {CANVAS_H} px · Proporção A5
               </p>
             </div>
           </>
@@ -520,33 +505,30 @@ export default function AdminPage() {
             </div>
             <p className="admin-canvas__placeholder-text">
               Selecione uma página na barra lateral
-              <span>ou crie uma nova para começar</span>
+              <span>ou crie um novo spread para começar</span>
             </p>
           </div>
         )}
       </main>
 
-      {/* PAINEL DE PROPRIEDADES */}
       <aside className="admin-properties">
         <div className="admin-properties__header">
-          <h3 className="admin-properties__title">
-            {selectedEl ? 'Propriedades' : 'Propriedades'}
-          </h3>
+          <h3 className="admin-properties__title">Propriedades</h3>
         </div>
 
         <div className="admin-properties__body">
           {selectedEl ? (
             <div className="admin-field">
-              {/* Preview */}
               {selectedEl.url && (
                 <div className="admin-preview">
                   <img src={selectedEl.url} alt="" />
                 </div>
               )}
 
-              {/* URL */}
               <div className="admin-field-group">
-                <label className="admin-label" style={{ display: 'block', marginBottom: 6 }}>URL da Imagem</label>
+                <label className="admin-label" style={{ display: 'block', marginBottom: 6 }}>
+                  URL da Imagem
+                </label>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     type="text"
@@ -556,27 +538,40 @@ export default function AdminPage() {
                     onChange={e => updateEl(selectedEl.id, { url: e.target.value })}
                     style={{ flex: 1 }}
                   />
-                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                    const f = e.target.files && e.target.files[0];
-                    if (!f) return;
-                    const url = await uploadToCloudinary(f);
-                    if (url) {
-                      updateEl(selectedEl.id, { url });
-                      // salva imediatamente a página quando o upload terminar
-                      await savePageToBackend({ ...activePage, elementos: activePage.elementos.map(el => el.id === selectedEl.id ? { ...el, url } : el) });
-                    }
-                    e.target.value = null;
-                  }} />
-                  <button className="admin-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading} title="Enviar do dispositivo">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const f = e.target.files && e.target.files[0];
+                      if (!f) return;
+                      const url = await uploadToCloudinary(f);
+                      if (url) {
+                        updateEl(selectedEl.id, { url });
+                        await savePageToBackend({
+                          ...activePage,
+                          elementos: activePage.elementos.map(el =>
+                            el.id === selectedEl.id ? { ...el, url } : el
+                          ),
+                        });
+                      }
+                      e.target.value = null;
+                    }}
+                  />
+                  <button
+                    className="admin-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
                     {uploading ? 'Enviando…' : 'Upload'}
                   </button>
                 </div>
                 <small style={{ display: 'block', marginTop: 6, color: '#8b8679' }}>
-                  Ou cole uma URL. Para upload direto, configure <strong>VITE_CLOUDINARY_CLOUD_NAME</strong> e <strong>VITE_CLOUDINARY_UPLOAD_PRESET</strong>.
+                  Ou cole uma URL. Configure <strong>VITE_CLOUDINARY_CLOUD_NAME</strong> e <strong>VITE_CLOUDINARY_UPLOAD_PRESET</strong> para upload direto.
                 </small>
               </div>
 
-              {/* Legenda */}
               <div className="admin-field-group">
                 <label className="admin-label">Legenda</label>
                 <input
@@ -590,7 +585,6 @@ export default function AdminPage() {
 
               <div className="admin-divider" />
 
-              {/* Posição & Tamanho */}
               <div className="admin-field-group">
                 <label className="admin-label">Posição & Tamanho</label>
                 <div className="admin-grid-2">
@@ -613,7 +607,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Ações rápidas */}
               <div className="admin-quick-actions">
                 <button
                   className="admin-btn-quick"
@@ -625,7 +618,7 @@ export default function AdminPage() {
                   className="admin-btn-quick"
                   onClick={() => updateEl(selectedEl.id, {
                     x: Math.max(0, Math.floor((CANVAS_W - selectedEl.largura) / 2)),
-                    y: Math.max(0, Math.floor((CANVAS_H - selectedEl.altura) / 2))
+                    y: Math.max(0, Math.floor((CANVAS_H - selectedEl.altura)  / 2)),
                   })}
                 >
                   Centralizar

@@ -727,3 +727,19 @@
   box-shadow: 0 0 0 2px var(--admin-gold), 0 0 0 5px rgba(200,170,105,0.18) !important;
   border-radius: 4px;
 }
+/* =============================================
+   SPREAD CARD (par esq + dir na sidebar)
+   ============================================= */
+.admin-spread-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--admin-surface-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+}
+
+.admin-spread-card .admin-page-card {
+  margin: 0;
+}
