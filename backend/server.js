@@ -121,11 +121,14 @@ app.get('/api/anuario', async (req, res) => {
 });
 
 // ROTA PARA CRIAR UMA PÁGINA EM BRANCO
+// ROTA PARA CRIAR UMA PÁGINA EM BRANCO
 app.post('/api/anuario/nova-pagina', async (req, res) => {
   try {
+    const { lado } = req.body; // 'esquerda' ou 'direita'
     const novaPagina = {
       tipoLayout: 'grid',
-      elementos: [], // Começa sem nenhum elemento dentro (Modo Canva)
+      lado: lado || 'direita', // campo novo — identifica o lado no livro
+      elementos: [],
       criadoEm: new Date()
     };
 
@@ -146,16 +149,18 @@ app.post('/api/anuario/nova-pagina', async (req, res) => {
 app.put('/api/anuario/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { elementos } = req.body; // Pega as fotos e coordenadas que o Admin enviou
+    const { elementos, lado } = req.body;
 
     const colecao = db.collection('paginas');
+
+    // Monta apenas os campos que vieram no body
+    const camposParaAtualizar = { elementos };
+    if (lado !== undefined) camposParaAtualizar.lado = lado;
     
-    // Atualiza apenas os elementos da página específica
     await colecao.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { elementos: elementos } }
+      { $set: camposParaAtualizar }
     );
-
     res.json({ success: true, message: 'Página atualizada com sucesso!' });
   } catch (error) {
     console.error('Erro ao salvar página:', error);
