@@ -79,6 +79,10 @@ const IcoNavRight = () => (
 // Helper para gerar URL do Cloudinary (usa fetch se configurado em Vite: VITE_CLOUDINARY_CLOUD_NAME)
 function cloudinaryUrl(src, opts = {}) {
   if (!src) return src;
+  // Se já for URL do próprio Cloudinary, usa direto para evitar dupla conversão.
+  if (/^https?:\/\/res\.cloudinary\.com\//.test(src)) {
+    return src;
+  }
   const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
   if (!cloud) return src; // sem configuração, retorna a URL original
   const transform = opts.transform || 'f_auto,q_auto,w_1200';
