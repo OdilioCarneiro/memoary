@@ -206,7 +206,7 @@ function BookViewer({ onLoginClick, pages }) {
         scrollTrigger: { trigger: '.viewport-hero', start: 'top top', end: '+=3000', scrub: 1.5, pin: true, onUpdate },
       });
       tl.to(heroRef.current,      { opacity: 0, x: -90, duration: 0.4, ease: 'power2.in' }, 0);
-      tl.to(bookSceneRef.current, { left: '60%', xPercent: -50, top: '50%', rotationY: 0, rotationZ: 0, scale: 1, duration: 1, ease: 'expo.inOut' }, 0.08);
+      tl.to(bookSceneRef.current, { left: '50%', xPercent: -50, top: '50%', rotationY: 0, rotationZ: 0, scale: 1, duration: 1, ease: 'expo.inOut' }, 0.08);
       if (navRef.current)    tl.to(navRef.current,    { y: -24,  duration: 1.1, ease: 'expo.inOut' }, 0.08);
       if (headerRef.current) tl.to(headerRef.current, { y: -120, opacity: 0,   duration: 1.1, ease: 'expo.inOut' }, 0.08);
       tl.add(onCoverOpen, 0.63);
@@ -433,7 +433,7 @@ function SpreadReader({ pages, onPhotoClick, navRef }) {
     setFlipState({ dir: 'fwd', fromSpread: from, toSpread: to });
     flipMV.set(0);
     animate(flipMV, -180, {
-      duration: 0.82, ease: [0.4, 0.0, 0.2, 1.0],
+      duration: 0.95, ease: [0.45, 0.0, 0.15, 1.0],
       onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
     });
   }, [isFlipping, spreadIdx, maxIdx, flipMV]);
@@ -444,7 +444,7 @@ function SpreadReader({ pages, onPhotoClick, navRef }) {
     setFlipState({ dir: 'bwd', fromSpread: from, toSpread: to });
     flipMV.set(0);
     animate(flipMV, 180, {
-      duration: 0.82, ease: [0.4, 0.0, 0.2, 1.0],
+      duration: 0.95, ease: [0.45, 0.0, 0.15, 1.0],
       onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
     });
   }, [isFlipping, spreadIdx, flipMV]);
@@ -474,7 +474,14 @@ function SpreadReader({ pages, onPhotoClick, navRef }) {
   }, [spreadIdx, pages.length]);
 
   return (
-    <div style={{ position: 'relative', width: SPREAD_W, height: BOOK_H }}>
+    <div style={{
+      position: 'relative', width: SPREAD_W, height: BOOK_H,
+      borderRadius: 6,
+      boxShadow:
+        '0 2px 6px rgba(20,14,5,0.10), ' +
+        '0 18px 40px -12px rgba(20,14,5,0.30), ' +
+        '0 45px 90px -25px rgba(20,14,5,0.35)',
+    }}>
 
       {/* ── SPREAD BACKGROUND: left page + spine + right page ── */}
       <SpreadBackground
@@ -558,7 +565,8 @@ function SpreadBackground({ left, right, spreadIdx, onPhotoClick }) {
       <div style={{
         position: 'absolute',
         top: 0, left: PAGE_W, width: SPINE_W, height: '100%',
-        background: 'linear-gradient(to right, #8a8070, #c8c0b0, #8a8070)',
+        background: 'linear-gradient(to right, #6e6555 0%, #9b9382 14%, #cdc4b0 50%, #9b9382 86%, #6e6555 100%)',
+        boxShadow: 'inset 5px 0 9px rgba(15,10,4,0.30), inset -5px 0 9px rgba(15,10,4,0.30)',
         zIndex: 3, pointerEvents: 'none',
       }} />
 
@@ -569,6 +577,7 @@ function SpreadBackground({ left, right, spreadIdx, onPhotoClick }) {
         overflow: 'hidden',
         background: 'linear-gradient(90deg, #a8a39a 0%, #cdc8bf 1%, #e5e0d6 3%, var(--paper) 100%)',
         borderRadius: '0 5px 5px 0',
+        boxShadow: 'inset 12px 0 20px -5px rgba(0,0,0,0.04)',
       }}>
         {/* Gutter shadow */}
         <div style={{
@@ -603,34 +612,61 @@ function FlipLeaf({ dir, frontPage, backPage, flipMV, creaseHighlight, selfShado
   const creaseBg = useTransform(creaseHighlight, v =>
     `linear-gradient(90deg,
       transparent 0%,
-      rgba(255,255,255,${(v*.55).toFixed(3)}) calc(50% - 18px),
-      rgba(245,240,228,${(v*.75).toFixed(3)}) 50%,
-      rgba(210,204,190,${(v*.4).toFixed(3)}) calc(50% + 18px),
+      rgba(255,255,255,${(v*.6).toFixed(3)}) calc(50% - 18px),
+      rgba(245,240,228,${(v*.85).toFixed(3)}) 50%,
+      rgba(210,204,190,${(v*.45).toFixed(3)}) calc(50% + 18px),
       transparent calc(50% + 40px))`
   );
   const frontShadow = useTransform(selfShadowFront, v =>
-    `linear-gradient(270deg, rgba(12,8,2,${(v*.65).toFixed(3)}) 0%, transparent 45%)`
+    `linear-gradient(270deg, rgba(12,8,2,${(v*.72).toFixed(3)}) 0%, transparent 45%)`
   );
   const backShadow = useTransform(selfShadowBack, v =>
-    `linear-gradient(90deg, rgba(12,8,2,${(v*.5).toFixed(3)}) 0%, transparent 50%)`
+    `linear-gradient(90deg, rgba(12,8,2,${(v*.58).toFixed(3)}) 0%, transparent 50%)`
   );
 
   // Cast shadow on opposite static page
   const castGrad = dir === 'fwd'
-    ? 'linear-gradient(90deg, rgba(14,9,2,0.30) 0%, rgba(14,9,2,0.10) 40%, transparent 100%)'
-    : 'linear-gradient(270deg, rgba(14,9,2,0.30) 0%, rgba(14,9,2,0.10) 40%, transparent 100%)';
+    ? 'linear-gradient(90deg, rgba(14,9,2,0.34) 0%, rgba(14,9,2,0.13) 40%, transparent 100%)'
+    : 'linear-gradient(270deg, rgba(14,9,2,0.34) 0%, rgba(14,9,2,0.13) 40%, transparent 100%)';
   const castLeft = dir === 'fwd' ? 0 : 'auto';
   const castRight = dir === 'fwd' ? 'auto' : 0;
   const castWidth = useTransform(flipMV, v => `${Math.abs(v) / 180 * 50}%`);
 
+  /* Ambient "lift" shadow — a soft pool of shadow that travels with the
+     turning leaf: it grows as the page rises off the spread (mid-flip)
+     and fades again as the page settles onto the opposite side. This is
+     a plain 2D layer (no preserve-3d), so blur/scale render reliably. */
+  const liftStart = dir === 'fwd' ? PAGE_W + SPINE_W : 0;
+  const liftEnd   = dir === 'fwd' ? 0 : PAGE_W + SPINE_W;
+  const liftLeft = useTransform(flipMV, v => {
+    const t = Math.min(Math.abs(v) / 180, 1);
+    return `${liftStart + (liftEnd - liftStart) * t}px`;
+  });
+  const liftProgress = useTransform(flipMV, v => Math.sin((Math.abs(v) / 180) * Math.PI));
+  const liftOpacity  = useTransform(liftProgress, [0, .5, 1], [0, .55, 0]);
+  const liftScaleX   = useTransform(liftProgress, [0, 1], [0.65, 1.05]);
+
   return (
     <>
+      {/* Ambient lift shadow — the page appears to rise off the spread */}
+      <motion.div style={{
+        position: 'absolute',
+        top: '3%', left: liftLeft,
+        width: PAGE_W, height: '94%',
+        scaleX: liftScaleX,
+        opacity: liftOpacity,
+        background: 'radial-gradient(ellipse 65% 60% at center, rgba(15,10,4,0.55) 0%, rgba(15,10,4,0) 72%)',
+        filter: 'blur(20px)',
+        zIndex: 24, pointerEvents: 'none',
+      }} />
+
       {/* Cast shadow on opposite page */}
       <motion.div style={{
         position: 'absolute', top: 0,
         left: castLeft, right: castRight,
         height: '100%', width: castWidth,
         background: castGrad, opacity: castOpacity,
+        filter: 'blur(3px)',
         zIndex: 20, pointerEvents: 'none',
       }} />
 
