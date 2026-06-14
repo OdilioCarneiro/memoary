@@ -153,14 +153,6 @@ html, body, #root {
   align-items: center;
   background: var(--surface-0);
   isolation: isolate;
-  transition: height 0.6s ease, min-height 0.6s ease;
-}
-
-/* Quando o ScrollTrigger remove o pin, o hero volta ao tamanho normal */
-.viewport-hero:not(.is-pinned) {
-  height: auto;
-  min-height: auto;
-  padding: 60px 0;
 }
 
 /* Clip only the grain/radial layers, not the nav */
@@ -408,12 +400,9 @@ html, body, #root {
    COVER
 ───────────────────────────────────────────────────────── */
 .book-cover {
-  position: absolute;
-  inset: 0;
   transform-style: preserve-3d;
   transform-origin: left center;
   z-index: 30;
-  /* CSS transition for GSAP-triggered class */
   transition: transform 1.4s var(--ease-quart);
   border-radius: 2px 5px 5px 2px;
   will-change: transform;
@@ -524,26 +513,15 @@ html, body, #root {
 
 /* Left page (recto) — gutter shadow from right spine */
 .page-face--left {
-  border-radius: 5px 2px 2px 5px;
-  transform: rotateY(180deg);
-  background: linear-gradient(
-    270deg,
-    #a8a39a 0%,
-    #cdc8bf 1%,
-    #e5e0d6 3%,
-    var(--paper) 100%
-  );
-   box-shadow: 
-   inset -8px 0 20px rgba(0,0,0,.08),
-    -20px 0 40px rgba(0,0,0,.12);
-     background: linear-gradient(
-    to left,
-    rgba(0,0,0,.12),
-    transparent
-  );
-
-  filter: blur(12px);
-  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fdfaf4;
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset -12px 0 20px -5px rgba(0,0,0,0.04);
+  overflow: hidden;
 }
 
 .page-face--left::before {
@@ -769,7 +747,7 @@ html, body, #root {
 ───────────────────────────────────────────────────────── */
 .book-nav {
   position: absolute;
-  left: 0%;
+  left: 00%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
