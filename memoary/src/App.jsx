@@ -12,11 +12,6 @@ import AdminPage   from './AdminPage';
 
 /* ══════════════════════════════════════════════
    CONSTANTS
-   
-   The book container is ALWAYS SPREAD_W wide (both pages side by side).
-   When "closed", the cover sits over the right half and a solid panel
-   covers the left half — giving the illusion of a single closed book.
-   When "open", the cover flips away to reveal the left page.
 ══════════════════════════════════════════════ */
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
@@ -24,11 +19,11 @@ const API_URL = window.location.hostname === 'localhost'
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PAGE_W      = 430;   // width of ONE page
+// BOOK_W = width of ONE page. The spread = BOOK_W * 2 when open.
+const BOOK_W      = 430;
 const BOOK_H      = 672;
-const SPINE_W     = 22;    // central spine strip
+const SPINE_W     = 22;
 const FORE_EDGE_W = 7;
-const SPREAD_W    = PAGE_W * 2 + SPINE_W;  // 882 — always-fixed outer width
 const PERSP       = 2600;
 
 /* ══════════════════════════════════════════════
@@ -162,6 +157,12 @@ export default function App() {
 
 /* ══════════════════════════════════════════════
    2.  BOOK VIEWER
+   
+   KEY FIX: The book uses a SPREAD layout.
+   - Closed: shows only the cover (BOOK_W wide)
+   - Open:   shows left + right pages side by side (BOOK_W * 2 + SPINE_W wide)
+   
+   The container changes width when opened so both pages are visible.
 ══════════════════════════════════════════════ */
 function BookViewer({ onLoginClick, pages }) {
   const containerRef = useRef(null);
@@ -178,33 +179,43 @@ function BookViewer({ onLoginClick, pages }) {
   const [flipState,   setFlipState]   = useState(null);
   const [photoModal,  setPhotoModal]  = useState(null);
 
-  // Scale to fit the FULL spread (SPREAD_W) in available viewport space.
-  // The container is always SPREAD_W wide — scale handles fitting.
+  // The open book is BOOK_W*2 + SPINE_W wide; closed is BOOK_W wide
+  const SPREAD_W = BOOK_W * 2 + SPINE_W;
+
   const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
-    const update = () => {
+    const updateScale = () => {
       const isMobile = window.innerWidth <= 899;
-      const availW = isMobile ? window.innerWidth * 0.94 : window.innerWidth * 0.62;
-      const availH = window.innerHeight * (isMobile ? 0.52 : 0.76);
-      const scaleW = availW  / SPREAD_W;
-      const scaleH = availH  / BOOK_H;
+      // Open book needs to fit SPREAD_W; closed fits BOOK_W
+      const targetW  = bookIsOpen ? SPREAD_W : BOOK_W;
+      const availW   = isMobile
+        ? window.innerWidth * 0.92
+        : window.innerWidth * 0.62;
+      const availH   = window.innerHeight * (isMobile ? 0.55 : 0.76);
+      const scaleW   = availW  / targetW;
+      const scaleH   = availH  / BOOK_H;
       setBookScale(Math.min(scaleW, scaleH, 1));
     };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [bookIsOpen, SPREAD_W]);
 
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
 
-  // getSpread: purely index-based, no `lado` field dependency
+  // FIX: robust getSpread — don't rely on `lado` field alone.
+  // Index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
+  // For spreadIdx=-1 (cover state): show first page as right, nothing as left.
   const getSpread = useCallback((idx) => {
-    if (idx < 0) return { left: null, right: pages[0] ?? null };
-    return {
-      left:  pages[idx * 2]     ?? null,
-      right: pages[idx * 2 + 1] ?? null,
-    };
+    if (idx < 0) {
+      // Cover view: right side shows the first page (or empty)
+      return { left: null, right: pages[0] ?? null };
+    }
+    const base  = idx * 2;
+    const left  = pages[base]     ?? null;
+    const right = pages[base + 1] ?? null;
+    return { left, right };
   }, [pages]);
 
   const curSpread  = getSpread(spreadIdx);
@@ -230,7 +241,7 @@ function BookViewer({ onLoginClick, pages }) {
     });
   }, [allPhotos]);
 
-  /* ── Page-turn motion values ── */
+  /* ── Page turn motion values ── */
   const flipMV          = useMotionValue(0);
   const foldProgress    = useTransform(flipMV, v => Math.sin((Math.abs(v) / 180) * Math.PI));
   const creaseHighlight = useTransform(foldProgress, [0, .5, 1], [0, .42, 0]);
@@ -246,7 +257,8 @@ function BookViewer({ onLoginClick, pages }) {
     setFlipState({ dir: 'fwd', fromSpread: from, toSpread: to });
     flipMV.set(0);
     animate(flipMV, -180, {
-      duration: 0.78, ease: [0.4, 0.0, 0.2, 1.0],
+      duration: 0.78,
+      ease: [0.4, 0.0, 0.2, 1.0],
       onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
     });
   }, [isFlipping, bookIsOpen, spreadIdx, maxSpreadIdx, flipMV]);
@@ -257,7 +269,8 @@ function BookViewer({ onLoginClick, pages }) {
     setFlipState({ dir: 'bwd', fromSpread: from, toSpread: to });
     flipMV.set(0);
     animate(flipMV, 180, {
-      duration: 0.78, ease: [0.4, 0.0, 0.2, 1.0],
+      duration: 0.78,
+      ease: [0.4, 0.0, 0.2, 1.0],
       onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
     });
   }, [isFlipping, bookIsOpen, spreadIdx, flipMV]);
@@ -277,26 +290,29 @@ function BookViewer({ onLoginClick, pages }) {
   }, [flipState, getSpread]);
 
   useGSAP(() => {
-    const mm = gsap.matchMedia();
+    let mm = gsap.matchMedia();
 
-    const onUpdate = (self) => {
+    const onUpdateShared = (self) => {
       const opened = self.progress > 0.62;
-      setBookIsOpen(p => (p === opened ? p : opened));
+      setBookIsOpen(p => p === opened ? p : opened);
       scrollCueRef.current?.classList.toggle('is-hidden', self.progress > 0.04);
       headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
       if (bookOuterRef.current) {
         bookOuterRef.current.style.boxShadow = opened
-          ? '-35px 35px 65px rgba(15,10,5,0.45)'
-          : '-15px 15px 35px rgba(15,10,5,0.35)';
+          ? '-35px 35px 65px rgba(15, 10, 5, 0.45)'
+          : '-15px 15px 35px rgba(15, 10, 5, 0.35)';
       }
     };
 
-    mm.add('(min-width: 900px)', () => {
+    mm.add("(min-width: 900px)", () => {
       gsap.set(bookSceneRef.current, { xPercent: -50, yPercent: -50, left: '72%', top: '48%', rotationY: -20, rotationZ: -5, scale: 0.78 });
       if (navRef.current)    gsap.set(navRef.current,    { y: 0 });
       if (headerRef.current) gsap.set(headerRef.current, { y: 0, opacity: 1 });
       const tl = gsap.timeline({
-        scrollTrigger: { trigger: '.viewport-hero', start: 'top top', end: '+=3000', scrub: 1.5, pin: true, onUpdate },
+        scrollTrigger: {
+          trigger: '.viewport-hero', start: 'top top', end: '+=3000',
+          scrub: 1.5, pin: true, onUpdate: onUpdateShared,
+        },
       });
       tl.to(heroRef.current,      { opacity: 0, x: -90, duration: 0.4, ease: 'power2.in' }, 0);
       tl.to(bookSceneRef.current, { left: '60%', xPercent: -50, top: '50%', rotationY: 0, rotationZ: 0, scale: 1, duration: 1, ease: 'expo.inOut' }, 0.08);
@@ -305,12 +321,15 @@ function BookViewer({ onLoginClick, pages }) {
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
-    mm.add('(max-width: 899px)', () => {
+    mm.add("(max-width: 899px)", () => {
       gsap.set(bookSceneRef.current, { xPercent: -50, yPercent: -50, left: '50%', top: '55%', rotationY: -15, rotationZ: -3, scale: 0.85 });
       gsap.set(navRef.current,    { y: 0 });
       gsap.set(headerRef.current, { y: 0, opacity: 1 });
       const tl = gsap.timeline({
-        scrollTrigger: { trigger: '.viewport-hero', start: 'top top', end: '+=2500', scrub: 1.5, pin: true, onUpdate },
+        scrollTrigger: {
+          trigger: '.viewport-hero', start: 'top top', end: '+=2500',
+          scrub: 1.5, pin: true, onUpdate: onUpdateShared,
+        },
       });
       tl.to(heroRef.current,      { opacity: 0, y: -50, duration: 0.4, ease: 'power2.in' }, 0);
       tl.to(bookSceneRef.current, { left: '50%', xPercent: -50, top: '50%', rotationY: 0, rotationZ: 0, scale: 1, duration: 1, ease: 'expo.inOut' }, 0.08);
@@ -326,6 +345,9 @@ function BookViewer({ onLoginClick, pages }) {
     const hi = Math.min(spreadIdx * 2 + 2, pages.length);
     return `${lo}${lo !== hi ? `–${hi}` : ''} / ${pages.length}`;
   }, [spreadIdx, pages.length]);
+
+  // Spread container width: when open shows both pages, when closed shows only cover
+  const outerWidth = bookIsOpen ? SPREAD_W : BOOK_W;
 
   return (
     <div ref={containerRef} className="app-container">
@@ -352,7 +374,7 @@ function BookViewer({ onLoginClick, pages }) {
         </div>
 
         <div ref={bookSceneRef} className="book-scene" style={{ perspective: PERSP }}>
-          {/* Responsive scale wrapper — scales the entire SPREAD_W container */}
+          {/* Responsive scale wrapper */}
           <div style={{
             transform: `scale(${bookScale})`,
             transformOrigin: 'center center',
@@ -360,57 +382,42 @@ function BookViewer({ onLoginClick, pages }) {
             transformStyle: 'preserve-3d',
           }}>
             {/*
-              ┌─────────────────────────────────────────┐
-              │  book-outer: ALWAYS SPREAD_W = 882px    │
-              │                                         │
-              │  ┌──────────┐ ╠╣ ┌──────────┐          │
-              │  │ LEFT pg  │    │ RIGHT pg │          │
-              │  │  PAGE_W  │    │  PAGE_W  │          │
-              │  └──────────┘    └──────────┘          │
-              └─────────────────────────────────────────┘
-              
-              Closed state: cover panel spans PAGE_W from left edge = 0,
-              sitting over the RIGHT half (PAGE_W + SPINE_W .. SPREAD_W).
-              A solid left-half "back board" hides the empty left page.
-              
-              Open state: cover rotates away (-176deg via CSS class),
-              left page and right page both become fully visible.
+              FIX: The outer book wrapper now has a dynamic width.
+              - Closed: BOOK_W (cover only)
+              - Open:   SPREAD_W = BOOK_W*2 + SPINE_W (full spread)
+              Transition is smooth so it animates as the cover opens.
             */}
             <div
               ref={bookOuterRef}
               className="book-outer"
               style={{
-                width:  SPREAD_W,
+                width:  outerWidth,
                 height: BOOK_H,
                 transformStyle: 'preserve-3d',
                 position: 'relative',
                 boxShadow: '-10px 10px 20px rgba(20,14,5,0.2)',
-                transition: 'box-shadow 0.6s ease',
+                transition: 'width 0.9s cubic-bezier(0.77,0,0.175,1), box-shadow 0.6s ease',
               }}
             >
-              {/* 3D structural faces */}
-              <div className="book-spine"     style={{ width: SPINE_W, height: BOOK_H, left: PAGE_W }} />
-              <div className="book-top"       style={{ width: SPREAD_W, height: SPINE_W, top: -SPINE_W + 2 }} />
-              <div className="book-fore-edge" style={{ left: SPREAD_W, width: FORE_EDGE_W }} />
+              {/* Structural faces — always relative to left edge */}
+              <div className="book-spine"     style={{ width: SPINE_W, height: BOOK_H, left: 0 }} />
+              <div className="book-top"       style={{ width: outerWidth, height: SPINE_W, top: -SPINE_W + 2 }} />
+              <div className="book-fore-edge" style={{ left: outerWidth, width: FORE_EDGE_W }} />
 
               {/*
-                ════════════════════════════════════════
-                STATIC SPREAD — always rendered.
-                Left page:  left=0,              width=PAGE_W
-                Right page: left=PAGE_W+SPINE_W, width=PAGE_W
-                Both are plain divs, no 3D, no stacking issue.
-                ════════════════════════════════════════
+                FIX: StaticSpread now receives the full outerWidth so it can
+                properly position left and right halves.
               */}
               <StaticSpread
                 left={flipVisible ? flipVisible.bgLeft  : curSpread.left}
                 right={flipVisible ? flipVisible.bgRight : curSpread.right}
                 spreadIdx={flipState ? flipState.toSpread : spreadIdx}
                 bookIsOpen={bookIsOpen}
+                spreadW={outerWidth}
                 zIndex={2}
                 onPhotoClick={!flipState ? openPhoto : undefined}
               />
 
-              {/* Flip animation leaf */}
               {flipState && flipVisible && (
                 <FlipLeaf
                   dir={flipVisible.dir}
@@ -422,59 +429,23 @@ function BookViewer({ onLoginClick, pages }) {
                   selfShadowBack={selfShadowBack}
                   castOpacity={castOpacity}
                   castWidth={castWidth}
+                  spreadW={outerWidth}
+                  pageW={BOOK_W}
                   height={BOOK_H}
                 />
               )}
 
-              {/*
-                ════════════════════════════════════════
-                COVER — positioned on the RIGHT half.
-                
-                The cover's transform-origin is its LEFT edge (the spine),
-                which sits at x = PAGE_W + SPINE_W from the spread left edge.
-                
-                `left` is set to PAGE_W + SPINE_W so it naturally occupies
-                the right page area. When .is-open triggers rotateY(-176deg),
-                it swings open to the left, revealing the left page beneath.
-                
-                A matching "back-board" covers the left half when closed.
-                ════════════════════════════════════════
-              */}
-
-              {/* Left half back-board: hides left page while closed */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: PAGE_W,
-                  height: BOOK_H,
-                  background: 'var(--cover-base)',
-                  zIndex: 28,
-                  borderRadius: '5px 0 0 5px',
-                  pointerEvents: 'none',
-                  // Fade out after cover animation completes (~0.7s)
-                  opacity: bookIsOpen ? 0 : 1,
-                  transition: bookIsOpen
-                    ? 'opacity 0.25s ease 0.65s'   // delay while cover swings open
-                    : 'opacity 0.15s ease 0s',     // snap back immediately when closing
-                }}
-              />
-
-              {/* The actual 3D cover — sits over the RIGHT half */}
+              {/* Cover — sits on right half when book is open (left page is revealed) */}
               <div
                 ref={coverRef}
                 className="book-cover"
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: PAGE_W + SPINE_W,   // right half of spread
-                  width: PAGE_W,
-                  height: BOOK_H,
                   transformStyle: 'preserve-3d',
-                  transformOrigin: 'left center',   // hinge = spine
                   pointerEvents: bookIsOpen ? 'none' : 'auto',
-                  // CSS class `is-open` applies: transform: rotateY(-176deg)
+                  // When open, cover flips from the right-half origin
+                  left: bookIsOpen ? BOOK_W + SPINE_W : 0,
+                  width: BOOK_W,
+                  transition: 'left 0.9s cubic-bezier(0.77,0,0.175,1)',
                 }}
               >
                 <div className="cover-face cover-face--front">
@@ -489,7 +460,6 @@ function BookViewer({ onLoginClick, pages }) {
                 </div>
               </div>
 
-              {/* Nav buttons */}
               {bookIsOpen && (
                 <nav ref={navRef} className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
                   <button className="nav-btn" onClick={flipBackward}
@@ -523,64 +493,69 @@ function BookViewer({ onLoginClick, pages }) {
 
 /* ══════════════════════════════════════════════
    3.  STATIC SPREAD
+
+   FIX: The core rendering bug was here.
    
-   THE FIX:
-   - Container:  position absolute, inset 0 (fills book-outer = SPREAD_W)
-   - Left page:  position absolute, left=0,              width=PAGE_W, height=100%
-   - Spine strip: position absolute, left=PAGE_W,         width=SPINE_W
-   - Right page: position absolute, left=PAGE_W+SPINE_W, width=PAGE_W, height=100%
+   Previously both page faces used `position: absolute; inset: 0` so they
+   stacked on top of each other — the right page always covered the left.
+
+   Fix: 
+   - Left page face:  positioned on the LEFT half  → left:0, right:50% (or right: pageW)
+   - Right page face: positioned on the RIGHT half → left:50% (or left: pageW+SPINE_W)
    
-   Three siblings, never overlapping. Simple and correct.
+   When book is closed (spreadIdx < 0), only the right page is shown (full width).
 ══════════════════════════════════════════════ */
 function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoClick }) {
+  const pageW = BOOK_W; // each page is half the spread
+
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex }}>
+      {/* ── LEFT PAGE — only shown when book is open (spreadIdx >= 0) ── */}
+      {bookIsOpen && spreadIdx >= 0 && (
+        <div
+          className="page-face page-face--left"
+          style={{
+            position: 'absolute',
+            top:    0,
+            left:   0,
+            width:  pageW,
+            height: '100%',
+            overflow: 'hidden',
+          }}
+        >
+          {left
+            ? <PageContent page={left} onPhotoClick={onPhotoClick} />
+            : <EmptyPage />
+          }
+          <div className="page-rule" />
+          <span className="page-folio page-folio--left">{spreadIdx * 2 + 1}</span>
+        </div>
+      )}
 
-      {/* ── LEFT PAGE ── */}
-      <div
-        className="page-face page-face--left"
-        style={{
+      {/* ── SPINE DIVIDER — only when open ── */}
+      {bookIsOpen && (
+        <div style={{
           position: 'absolute',
-          top:      0,
-          left:     0,
-          width:    PAGE_W,
-          height:   '100%',
-          overflow: 'hidden',
-        }}
-      >
-        {(bookIsOpen && spreadIdx >= 0 && left)
-          ? <PageContent page={left} onPhotoClick={onPhotoClick} />
-          : <EmptyPage />
-        }
-        {bookIsOpen && spreadIdx >= 0 && (
-          <>
-            <div className="page-rule" />
-            <span className="page-folio page-folio--left">{spreadIdx * 2 + 1}</span>
-          </>
-        )}
-      </div>
-
-      {/* ── CENTRAL SPINE STRIP ── */}
-      <div style={{
-        position:   'absolute',
-        top:        0,
-        left:       PAGE_W,
-        width:      SPINE_W,
-        height:     '100%',
-        background: 'linear-gradient(to right, #8a8070, #c8c0b0, #8a8070)',
-        zIndex:     3,
-        pointerEvents: 'none',
-      }} />
+          top:    0,
+          left:   pageW,
+          width:  SPINE_W,
+          height: '100%',
+          background: 'linear-gradient(to right, #8a8070, #c8c0b0, #8a8070)',
+          zIndex: 3,
+          pointerEvents: 'none',
+        }} />
+      )}
 
       {/* ── RIGHT PAGE ── */}
       <div
         className="page-face page-face--right"
         style={{
           position: 'absolute',
-          top:      0,
-          left:     PAGE_W + SPINE_W,
-          width:    PAGE_W,
-          height:   '100%',
+          top:    0,
+          // When open: sits to the right of the spine. When closed: fills whole width.
+          left:   bookIsOpen ? pageW + SPINE_W : 0,
+          width:  pageW,
+          height: '100%',
           overflow: 'hidden',
         }}
       >
@@ -588,11 +563,9 @@ function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoC
           ? <PageContent page={right} onPhotoClick={onPhotoClick} />
           : <EmptyPage isFirst={spreadIdx < 0} />
         }
+        <div className="page-rule" />
         {spreadIdx >= 0 && (
-          <>
-            <div className="page-rule" />
-            <span className="page-folio page-folio--right">{spreadIdx * 2 + 2}</span>
-          </>
+          <span className="page-folio page-folio--right">{spreadIdx * 2 + 2}</span>
         )}
       </div>
     </div>
@@ -602,13 +575,16 @@ function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoC
 /* ══════════════════════════════════════════════
    4.  FLIP LEAF
    
-   Fwd flip: right page (at PAGE_W+SPINE_W) turns left → origin left center
-   Bwd flip: left page  (at 0)              turns right → origin right center
+   FIX: The leaf now flips from the spine (center of the spread).
+   - Forward flip: right page of current spread turns → reveals left page of next
+     Origin: left edge of the right half = pageW + SPINE_W
+   - Backward flip: left page of current spread turns → reveals right page of prev
+     Origin: right edge of the left half = pageW
 ══════════════════════════════════════════════ */
 function FlipLeaf({
   dir, frontPage, backPage,
   leafRY, creaseHighlight, selfShadowFront, selfShadowBack,
-  castOpacity, castWidth, height,
+  castOpacity, castWidth, pageW, height,
 }) {
   const creaseBg = useTransform(creaseHighlight, v =>
     `linear-gradient(90deg,
@@ -625,45 +601,45 @@ function FlipLeaf({
     `linear-gradient(90deg, rgba(12,8,2,${(v * .5).toFixed(3)}) 0%, transparent 50%)`
   );
 
+  // Cast shadow falls on the opposite static page
   const castGrad = dir === 'fwd'
     ? 'linear-gradient(90deg, rgba(14,9,2,0.32) 0%, rgba(14,9,2,0.12) 40%, transparent 100%)'
     : 'linear-gradient(270deg, rgba(14,9,2,0.32) 0%, rgba(14,9,2,0.12) 40%, transparent 100%)';
   const castPos = dir === 'fwd'
-    ? { left: 0,              right: 'auto' }
-    : { right: 0, left: 'auto' };
+    ? { left: pageW + SPINE_W, right: 'auto' }
+    : { right: pageW + SPINE_W, left: 'auto' };
 
-  // Leaf starts at its own page position, one PAGE_W wide
-  const leafLeft   = dir === 'fwd' ? PAGE_W + SPINE_W : 0;
-  const leafOrigin = dir === 'fwd' ? 'left center'    : 'right center';
+  // The leaf itself: positioned over the page it starts from
+  const leafLeft = dir === 'fwd' ? pageW + SPINE_W : 0;
 
   return (
     <>
-      {/* Cast shadow projected onto the opposite static page */}
+      {/* Cast shadow on the opposite page */}
       <motion.div style={{
-        position:      'absolute',
-        top:           0,
-        height:        '100%',
-        width:         castWidth,
-        background:    castGrad,
-        opacity:       castOpacity,
-        zIndex:        20,
+        position: 'absolute',
+        top: 0,
+        height: '100%',
+        width: castWidth,
+        background: castGrad,
+        opacity: castOpacity,
+        zIndex: 20,
         pointerEvents: 'none',
         ...castPos,
       }} />
 
-      {/* The flipping leaf */}
+      {/* The flipping leaf — one page wide, positioned on its starting half */}
       <motion.div style={{
-        position:        'absolute',
-        top:             0,
-        left:            leafLeft,
-        width:           PAGE_W,
+        position: 'absolute',
+        top: 0,
+        left: leafLeft,
+        width: pageW,
         height,
-        transformStyle:  'preserve-3d',
-        transformOrigin: leafOrigin,
-        rotateY:         leafRY,
-        zIndex:          25,
-        pointerEvents:   'none',
-        willChange:      'transform',
+        transformStyle: 'preserve-3d',
+        transformOrigin: dir === 'fwd' ? 'left center' : 'right center',
+        rotateY: leafRY,
+        zIndex: 25,
+        pointerEvents: 'none',
+        willChange: 'transform',
       }}>
         <div className="flip-face flip-face--front">
           {frontPage ? <PageContent page={frontPage} /> : <EmptyPage />}
@@ -702,18 +678,18 @@ function PageContent({ page, onPhotoClick }) {
             whileHover={onPhotoClick ? 'hover' : 'rest'}
             onClick={() => onPhotoClick?.(el)}
             style={{
-              position:     'absolute',
-              left:         el.x       ?? 0,
-              top:          el.y       ?? 0,
-              width:        el.largura ?? 200,
-              height:       el.altura  ?? 150,
-              overflow:     'hidden',
+              position: 'absolute',
+              left:   el.x       ?? 0,
+              top:    el.y       ?? 0,
+              width:  el.largura ?? 200,
+              height: el.altura  ?? 150,
+              overflow: 'hidden',
               borderRadius: 3,
-              border:       '1px solid rgba(0,0,0,0.06)',
-              boxShadow:    '0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
-              cursor:       onPhotoClick ? 'pointer' : 'default',
+              border: '1px solid rgba(0,0,0,0.06)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
+              cursor: onPhotoClick ? 'pointer' : 'default',
               pointerEvents: 'auto',
-              zIndex:        10,
+              zIndex: 10,
             }}
           >
             <img
@@ -723,13 +699,14 @@ function PageContent({ page, onPhotoClick }) {
               loading="lazy"
               draggable={false}
             />
+
             {onPhotoClick && (
               <motion.div
                 variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
                 transition={{ duration: 0.2 }}
                 style={{
                   position: 'absolute', inset: 0,
-                  background: 'rgba(10,7,3,0.35)',
+                  background: 'rgba(10, 7, 3, 0.35)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   pointerEvents: 'none', zIndex: 2,
                 }}
@@ -741,19 +718,21 @@ function PageContent({ page, onPhotoClick }) {
                 >
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  <line x1="11" y1="8"  x2="11" y2="14" />
-                  <line x1="8"  y1="11" x2="14" y2="11" />
+                  <line x1="11" y1="8"  x2="11"    y2="14"    />
+                  <line x1="8"  y1="11" x2="14"    y2="11"    />
                 </motion.svg>
               </motion.div>
             )}
+
             {el.legenda && (
               <figcaption style={{
-                position:   'absolute', bottom: 0, left: 0, right: 0,
+                position: 'absolute', bottom: 0, left: 0, right: 0,
                 background: 'rgba(253,249,244,0.96)', backdropFilter: 'blur(8px)',
-                padding:    '6px 10px', fontSize: 15,
+                padding: '6px 10px', fontSize: 15,
                 fontFamily: 'var(--f-display)', fontStyle: 'italic',
-                letterSpacing: '0.04em', color: '#222', fontWeight: 500,
-                textAlign:  'center', zIndex: 3,
+                letterSpacing: '0.04em',
+                color: '#222', fontWeight: 500,
+                textAlign: 'center', zIndex: 3,
               }}>
                 {el.legenda}
               </figcaption>
@@ -786,15 +765,16 @@ function EmptyPage({ isFirst = false }) {
    7.  AVATAR
 ══════════════════════════════════════════════ */
 const PALETTES = [
-  ['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],
-  ['#e8d5e5','#5c1a4e'],['#e8e4d5','#5c4e1a'],['#d5e8e8','#1a4e4e'],
-  ['#ead5d5','#5c1a1a'],['#e5d5e8','#451a5c'],
+  ['#e8d5b7', '#7a5c10'], ['#d4e8d5', '#1e5c22'], ['#d5dde8', '#1a3360'],
+  ['#e8d5e5', '#5c1a4e'], ['#e8e4d5', '#5c4e1a'], ['#d5e8e8', '#1a4e4e'],
+  ['#ead5d5', '#5c1a1a'], ['#e5d5e8', '#451a5c'],
 ];
 
 function Avatar({ name, size = 32 }) {
-  const safeName = (name && typeof name === 'string' && name.trim()) ? name : 'Visitante';
-  const idx      = (safeName.charCodeAt(0) || 0) % PALETTES.length;
-  const palette  = PALETTES[idx];
+  const safeName = (name && typeof name === 'string' && name.trim() !== '') ? name : 'Visitante';
+  const charCode = safeName.charCodeAt(0) || 0;
+  const idx      = isNaN(charCode) ? 0 : (charCode % PALETTES.length);
+  const palette  = PALETTES[idx] || PALETTES[0];
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%',
@@ -811,32 +791,34 @@ function Avatar({ name, size = 32 }) {
    8.  COMMENTS HOOK
 ══════════════════════════════════════════════ */
 function useComments(photoId) {
-  const [comments,  setComments]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [posting,   setPosting]   = useState(false);
-  const [likedMap,  setLikedMap]  = useState({});
+  const [comments, setComments] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [posting,  setPosting]  = useState(false);
+  const [likedMap, setLikedMap] = useState({});
   const [guestName, setGuestName] = useState(() => localStorage.getItem('mm_guest_name') || '');
 
   useEffect(() => {
     if (guestName) return;
-    const adj = ['Alegre','Curioso','Animado','Saudoso'];
-    const n = adj[Math.floor(Math.random() * adj.length)] + ' ' + Math.floor(Math.random() * 900 + 100);
-    localStorage.setItem('mm_guest_name', n);
+    const k   = 'mm_guest_name';
+    const adj = ['Alegre', 'Curioso', 'Animado', 'Saudoso'];
+    const n   = adj[Math.floor(Math.random() * adj.length)] + ' ' + Math.floor(Math.random() * 900 + 100);
+    localStorage.setItem(k, n);
     Promise.resolve().then(() => setGuestName(n));
   }, [guestName]);
 
   useEffect(() => {
     if (!photoId) return;
     let active = true;
-    const run = async () => {
+    const loadComments = async () => {
       try {
         const r = await fetch(`${API_URL}/api/comentarios/${encodeURIComponent(photoId)}`);
         const j = await r.json();
-        if (active && j.success) setComments(j.data ?? []);
+        if (!active) return;
+        if (j.success) setComments(j.data ?? []);
       } catch { /* graceful */ }
       finally { if (active) setLoading(false); }
     };
-    run();
+    Promise.resolve().then(() => { if (!active) return; setLoading(true); loadComments(); });
     return () => { active = false; };
   }, [photoId]);
 
@@ -845,7 +827,8 @@ function useComments(photoId) {
     setPosting(true);
     try {
       const r = await fetch(`${API_URL}/api/comentarios`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ photoId, autor: guestName, texto: texto.trim() }),
       });
       const j = await r.json();
@@ -900,21 +883,31 @@ function CommentRow({ c, liked, onLike }) {
       <Avatar name={c.autor} size={32} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--ink)', margin: 0 }}>
-          <strong style={{ fontWeight: 600, marginRight: 5 }}>{c.autor || 'Visitante'}</strong>
+          <strong style={{ fontWeight: 600, marginRight: 5, letterSpacing: '-0.01em' }}>
+            {c.autor || 'Visitante'}
+          </strong>
           {c.texto}
         </p>
         <div style={{ display: 'flex', gap: 12, marginTop: 5 }}>
           <span style={{ fontSize: 11, color: 'var(--ink-25)' }}>{timeAgo(c.criadoEm)}</span>
-          {c.likes > 0 && <span style={{ fontSize: 11, color: 'var(--ink-25)' }}>{c.likes} curtida{c.likes !== 1 ? 's' : ''}</span>}
+          {c.likes > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--ink-25)' }}>
+              {c.likes} curtida{c.likes !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </div>
-      <button onClick={() => onLike(c._id)} style={{
-        background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
-        color:     liked ? '#e05a6a' : (hover ? 'var(--ink-50)' : 'transparent'),
-        transition: 'color 0.18s, transform 0.18s',
-        transform:  liked ? 'scale(1.18)' : 'scale(1)',
-        flexShrink: 0, alignSelf: 'flex-start', marginTop: 2,
-      }} aria-label={liked ? 'Descurtir' : 'Curtir'}>
+      <button
+        onClick={() => onLike(c._id)}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
+          color:     liked ? '#e05a6a' : (hover ? 'var(--ink-50)' : 'transparent'),
+          transition: 'color 0.18s, transform 0.18s',
+          transform:  liked ? 'scale(1.18)' : 'scale(1)',
+          flexShrink: 0, alignSelf: 'flex-start', marginTop: 2,
+        }}
+        aria-label={liked ? 'Descurtir' : 'Curtir'}
+      >
         <IcoHeart filled={liked} />
       </button>
     </div>
@@ -925,22 +918,27 @@ function CommentRow({ c, liked, onLike }) {
    11. PHOTO MODAL
 ══════════════════════════════════════════════ */
 function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
-  const [cur,         setCur]         = useState(initialPhoto);
-  const [imgLoaded,   setImgLoaded]   = useState(false);
-  const [commentText, setCommentText] = useState('');
+  const [cur,          setCur]         = useState(initialPhoto);
+  const [imgLoaded,    setImgLoaded]   = useState(false);
+  const [commentText,  setCommentText] = useState('');
   const inputRef = useRef(null);
   const listRef  = useRef(null);
 
   const { comments, loading, posting, guestName, post, toggleLike, likedMap }
     = useComments(cur?.id ?? cur?.url);
 
-  const curIdx  = useMemo(() => allPhotos.findIndex(p => (p.id ?? p.url) === (cur?.id ?? cur?.url)), [allPhotos, cur]);
+  const curIdx = useMemo(() =>
+    allPhotos.findIndex(p => (p.id ?? p.url) === (cur?.id ?? cur?.url))
+  , [allPhotos, cur]);
+
   const hasPrev = curIdx > 0;
   const hasNext = curIdx < allPhotos.length - 1;
 
   const goTo = useCallback((idx) => {
     if (idx < 0 || idx >= allPhotos.length) return;
-    setImgLoaded(false); setCur(allPhotos[idx]); setCommentText('');
+    setImgLoaded(false);
+    setCur(allPhotos[idx]);
+    setCommentText('');
   }, [allPhotos]);
 
   useEffect(() => {
@@ -967,27 +965,29 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     if (ok) setCommentText('');
   };
 
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
+  const [isMobileModal, setIsMobileModal] = useState(() => window.innerWidth < 640);
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
+    const check = () => setIsMobileModal(window.innerWidth < 640);
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const [showComments, setShowComments] = useState(true);
+  const [showCommentsMobile, setShowCommentsMobile] = useState(true);
 
-  if (!cur?.url) return null;
+  if (!cur || !cur.url) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 9000,
         background: 'rgba(8,5,2,0.93)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: isMobile ? 0 : 20,
+        padding: isMobileModal ? 0 : 20,
       }}
     >
       <motion.div
@@ -997,81 +997,196 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
         style={{
-          display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-          width:  isMobile ? '100vw' : 'min(200vw, 1080px)',
-          height: isMobile ? '100dvh' : 'min(200vh, 700px)',
-          borderRadius: isMobile ? 0 : 14,
-          overflow: 'hidden', background: 'var(--white)',
+          display: 'flex',
+          flexDirection: isMobileModal ? 'column' : 'row',
+          width:  isMobileModal ? '100vw'              : 'min(200vw, 1080px)',
+          height: isMobileModal ? '100dvh'             : 'min(200vh, 700px)',
+          borderRadius: isMobileModal ? 0 : 14,
+          overflow: 'hidden',
+          background: 'var(--white)',
           boxShadow: '0 48px 120px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.35)',
         }}
       >
-        {/* Photo */}
+        {/* Photo area */}
         <div style={{
-          flex: isMobile ? (showComments ? '0 0 52%' : '1 1 auto') : '1 1 58%',
-          minWidth: 0, background: '#0d0a06',
-          position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flex: isMobileModal ? (showCommentsMobile ? '0 0 52%' : '1 1 auto') : '1 1 58%',
+          minWidth: 0, minHeight: isMobileModal ? 0 : undefined,
+          background: '#0d0a06',
+          position: 'relative',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden',
         }}>
           <div style={{
             position: 'absolute', inset: 0,
-            backgroundImage: `url(${cur.url})`, backgroundSize: 'cover', backgroundPosition: 'center',
-            filter: 'blur(28px) brightness(0.28) saturate(0.8)', transform: 'scale(1.12)',
+            backgroundImage: `url(${cur.url})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            filter: 'blur(28px) brightness(0.28) saturate(0.8)',
+            transform: 'scale(1.12)',
           }} />
-          <motion.img key={cur.url} src={cur.url} alt={cur.legenda || 'Foto do anuário'}
-            initial={{ opacity: 0 }} animate={{ opacity: imgLoaded ? 1 : 0 }}
-            transition={{ duration: 0.38 }} onLoad={() => setImgLoaded(true)}
-            style={{ position: 'relative', zIndex: 1, maxWidth: '92%', maxHeight: '88%', objectFit: 'contain', borderRadius: 4, userSelect: 'none', pointerEvents: 'none' }}
+
+          <motion.img
+            key={cur.url}
+            src={cur.url}
+            alt={cur.legenda || 'Foto do anuário'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: imgLoaded ? 1 : 0 }}
+            transition={{ duration: 0.38 }}
+            onLoad={() => setImgLoaded(true)}
+            style={{
+              position: 'relative', zIndex: 1,
+              maxWidth: '92%', maxHeight: '88%',
+              objectFit: 'contain', borderRadius: 4,
+              userSelect: 'none', pointerEvents: 'none',
+            }}
             draggable={false}
           />
+
           {cur.legenda && (
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2, background: 'linear-gradient(transparent,rgba(0,0,0,0.75))', padding: '36px 24px 18px' }}>
-              <p style={{ fontFamily: 'var(--f-display)', fontStyle: 'italic', fontSize: 13, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.035em', textAlign: 'center', margin: 0 }}>{cur.legenda}</p>
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
+              background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+              padding: '36px 24px 18px',
+            }}>
+              <p style={{
+                fontFamily: 'var(--f-display)', fontStyle: 'italic',
+                fontSize: 13, color: 'rgba(255,255,255,0.8)',
+                letterSpacing: '0.035em', textAlign: 'center', margin: 0,
+              }}>
+                {cur.legenda}
+              </p>
             </div>
           )}
-          {hasPrev && <button onClick={() => goTo(curIdx-1)} style={{ position:'absolute',top:'50%',left:14,transform:'translateY(-50%)',zIndex:3,width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',backdropFilter:'blur(8px)' }}><IcoNavLeft /></button>}
-          {hasNext && <button onClick={() => goTo(curIdx+1)} style={{ position:'absolute',top:'50%',right:14,transform:'translateY(-50%)',zIndex:3,width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',backdropFilter:'blur(8px)' }}><IcoNavRight /></button>}
+
+          {hasPrev && (
+            <button onClick={() => goTo(curIdx - 1)} style={{
+              position: 'absolute', top: '50%', left: 14, transform: 'translateY(-50%)',
+              zIndex: 3, width: 42, height: 42, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
+              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'background 0.2s',
+            }}>
+              <IcoNavLeft />
+            </button>
+          )}
+          {hasNext && (
+            <button onClick={() => goTo(curIdx + 1)} style={{
+              position: 'absolute', top: '50%', right: 14, transform: 'translateY(-50%)',
+              zIndex: 3, width: 42, height: 42, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
+              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'background 0.2s',
+            }}>
+              <IcoNavRight />
+            </button>
+          )}
         </div>
 
-        {/* Comments */}
-        {(!isMobile || showComments) && (
-          <div style={{ flex: isMobile ? '1 1 auto' : '1 1 42%', minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-0)', borderTop: isMobile ? '1px solid var(--surface-2)' : 'none' }}>
-            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--surface-2)', flexShrink: 0 }}>
+        {/* Comments panel */}
+        {(!isMobileModal || showCommentsMobile) && (
+          <div style={{
+            flex: isMobileModal ? '1 1 auto' : '1 1 42%',
+            minWidth: 0,
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--surface-0)',
+            borderTop: isMobileModal ? '1px solid var(--surface-2)' : 'none',
+          }}>
+            <header style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 18px', borderBottom: '1px solid var(--surface-2)',
+              flexShrink: 0,
+            }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontFamily: 'var(--f-display)', fontSize: 17, fontWeight: 500, fontStyle: 'italic', color: 'var(--ink)' }}>Comentários</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-50)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 10 }}>{comments.length}</span>
+                <span style={{ fontFamily: 'var(--f-display)', fontSize: 17, fontWeight: 500, fontStyle: 'italic', color: 'var(--ink)' }}>
+                  Comentários
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-50)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 10 }}>
+                  {comments.length}
+                </span>
               </div>
-              <button onClick={isMobile ? () => setShowComments(false) : onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-50)', padding: 4 }}><IcoClose /></button>
+              <button
+                onClick={isMobileModal ? () => setShowCommentsMobile(false) : onClose}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-50)', padding: 4, marginRight: -4 }}
+              >
+                <IcoClose />
+              </button>
             </header>
-            <div ref={listRef} className="photo-comment-list" style={{ flex: 1, overflowY: 'auto', padding: '0 18px', display: 'flex', flexDirection: 'column' }}>
-              {loading
-                ? <div style={{ margin: 'auto', color: 'var(--ink-25)' }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'lbSpin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>
-                : comments.length === 0
-                  ? <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--ink-25)', maxWidth: 200 }}><IcoHeart filled={false}/><p style={{ marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>Seja o primeiro a deixar uma memória nesta foto.</p></div>
-                  : comments.map(c => <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />)
-              }
+
+            <div ref={listRef} className="photo-comment-list" style={{
+              flex: 1, overflowY: 'auto', padding: '0 18px',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {loading ? (
+                <div style={{ margin: 'auto', color: 'var(--ink-25)' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'lbSpin 1s linear infinite' }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                </div>
+              ) : comments.length === 0 ? (
+                <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--ink-25)', maxWidth: 200 }}>
+                  <IcoHeart filled={false} />
+                  <p style={{ marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
+                    Seja o primeiro a deixar uma memória nesta foto.
+                  </p>
+                </div>
+              ) : (
+                comments.map(c => (
+                  <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />
+                ))
+              )}
             </div>
+
             <div style={{ padding: '14px 18px', borderTop: '1px solid var(--surface-2)', background: 'var(--white)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Avatar name={guestName} size={30} />
-                <input ref={inputRef} value={commentText} onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handlePost()} placeholder="Adicione um comentário…" disabled={posting}
-                  style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: 'var(--ink)', fontFamily: 'var(--f-ui)', padding: '8px 0' }}
+                <input
+                  ref={inputRef}
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handlePost()}
+                  placeholder="Adicione um comentário…"
+                  disabled={posting}
+                  style={{
+                    flex: 1, border: 'none', background: 'transparent',
+                    outline: 'none', fontSize: 13, color: 'var(--ink)',
+                    fontFamily: 'var(--f-ui)', padding: '8px 0',
+                  }}
                 />
-                <button onClick={handlePost} disabled={posting || !commentText.trim()}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)', transition: 'color 0.15s', display: 'flex', alignItems: 'center' }}
-                  aria-label="Publicar"><IcoSend /></button>
+                <button
+                  onClick={handlePost}
+                  disabled={posting || !commentText.trim()}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                    color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)',
+                    transition: 'color 0.15s, transform 0.15s',
+                    transform: posting ? 'scale(0.85)' : 'scale(1)',
+                    display: 'flex', alignItems: 'center',
+                  }}
+                  aria-label="Publicar"
+                >
+                  <IcoSend />
+                </button>
               </div>
             </div>
           </div>
         )}
       </motion.div>
 
-      {!isMobile && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-          style={{ position: 'fixed', bottom: 18, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.12em', textTransform: 'uppercase', pointerEvents: 'none', zIndex: 9001, whiteSpace: 'nowrap' }}>
+      {!isMobileModal && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          style={{
+            position: 'fixed', bottom: 18, left: '50%', transform: 'translateX(-50%)',
+            fontSize: 10, color: 'rgba(255,255,255,0.22)',
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            pointerEvents: 'none', zIndex: 9001, whiteSpace: 'nowrap',
+          }}
+        >
           esc · fechar — ← → · navegar
         </motion.p>
       )}
+
       <style>{`@keyframes lbSpin { to { transform: rotate(360deg); } }`}</style>
     </motion.div>
   );
