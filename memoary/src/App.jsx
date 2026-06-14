@@ -189,11 +189,24 @@ useEffect(() => {
     return () => window.removeEventListener('resize', updateScale);
   }, []);
 
-  const leftPages = pages.filter(p => p.lado === 'esquerda');
-const rightPages = pages.filter(p => p.lado === 'direita');
+const spreads = useMemo(() => {
+  const ordered = [...pages].sort(
+    (a, b) => new Date(a.criadoEm) - new Date(b.criadoEm)
+  );
 
-const totalSpreads = Math.max(leftPages.length, rightPages.length);
-const maxSpreadIdx = totalSpreads - 1;
+  const result = [];
+
+  for (let i = 0; i < ordered.length; i += 2) {
+    result.push({
+      left: ordered[i] ?? null,
+      right: ordered[i + 1] ?? null,
+    });
+  }
+
+  return result;
+}, [pages]);
+
+const maxSpreadIdx = spreads.length - 1;
   
 
 const spreads = useMemo(() => {
@@ -208,23 +221,8 @@ const spreads = useMemo(() => {
   }));
 }, [pages]);
 
-const getSpread = useCallback((idx) => {
-  const leftPages = pages.filter(p => p.lado === 'esquerda');
-  const rightPages = pages.filter(p => p.lado === 'direita');
 
-  if (idx < 0) {
-    return {
-      left: null,
-      right: rightPages[0] ?? null
-    };
-  }
-
-  return {
-    left: leftPages[idx] ?? null,
-    right: rightPages[idx] ?? null
-  };
-}, [pages]);
-  const curSpread  = getSpread(spreadIdx);
+ const curSpread = spreads[spreadIdx] ?? { left: null, right: null };
   const isFlipping = flipState !== null;
 
   const allPhotos = useMemo(() =>
@@ -257,7 +255,7 @@ const getSpread = useCallback((idx) => {
   const leafRY          = flipMV;
 
   const flipForward = useCallback(() => {
-    if (isFlipping || !bookIsOpen || spreadIdx >= maxSpreadIdx) return;
+    if (isFlipping || !bookIsOpen || spreadIdx >= spreads.length - 1) return;
     const from = spreadIdx, to = spreadIdx + 1;
     setFlipState({ dir:'fwd', fromSpread:from, toSpread:to });
     flipMV.set(0);
