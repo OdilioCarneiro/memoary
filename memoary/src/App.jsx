@@ -506,69 +506,26 @@ function BookViewer({ onLoginClick, pages }) {
    When book is closed (spreadIdx < 0), only the right page is shown (full width).
 ══════════════════════════════════════════════ */
 function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoClick }) {
-  const pageW = BOOK_W; // each page is half the spread
-
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex }}>
-      {/* ── LEFT PAGE — only shown when book is open (spreadIdx >= 0) ── */}
+    <>
       {bookIsOpen && spreadIdx >= 0 && (
-        <div
-          className="page-face page-face--left"
-          style={{
-            position: 'absolute',
-            top:    0,
-            left:   0,
-            width:  pageW,
-            height: '100%',
-            overflow: 'hidden',
-          }}
-        >
-          {left
-            ? <PageContent page={left} onPhotoClick={onPhotoClick} />
-            : <EmptyPage />
-          }
-          <div className="page-rule" />
-          <span className="page-folio page-folio--left">{spreadIdx * 2 + 1}</span>
+        <div className="static-page" style={{ zIndex }}>
+          <div className="page-face page-face--left">
+            {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
+            <div className="page-rule" />
+            <span className="page-folio page-folio--left">{spreadIdx * 2 + 1}</span>
+          </div>
         </div>
       )}
 
-      {/* ── SPINE DIVIDER — only when open ── */}
-      {bookIsOpen && (
-        <div style={{
-          position: 'absolute',
-          top:    0,
-          left:   pageW,
-          width:  SPINE_W,
-          height: '100%',
-          background: 'linear-gradient(to right, #8a8070, #c8c0b0, #8a8070)',
-          zIndex: 3,
-          pointerEvents: 'none',
-        }} />
-      )}
-
-      {/* ── RIGHT PAGE ── */}
-      <div
-        className="page-face page-face--right"
-        style={{
-          position: 'absolute',
-          top:    0,
-          // When open: sits to the right of the spine. When closed: fills whole width.
-          left:   bookIsOpen ? pageW + SPINE_W : 0,
-          width:  pageW,
-          height: '100%',
-          overflow: 'hidden',
-        }}
-      >
-        {right
-          ? <PageContent page={right} onPhotoClick={onPhotoClick} />
-          : <EmptyPage isFirst={spreadIdx < 0} />
-        }
-        <div className="page-rule" />
-        {spreadIdx >= 0 && (
-          <span className="page-folio page-folio--right">{spreadIdx * 2 + 2}</span>
-        )}
+      <div className="static-page" style={{ zIndex }}>
+        <div className="page-face page-face--right">
+          {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={spreadIdx < 0} />}
+          <div className="page-rule" />
+          {spreadIdx >= 0 && <span className="page-folio page-folio--right">{spreadIdx * 2 + 2}</span>}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -589,73 +546,53 @@ function FlipLeaf({
   const creaseBg = useTransform(creaseHighlight, v =>
     `linear-gradient(90deg,
       transparent 0%,
-      rgba(255,255,255,${(v * .55).toFixed(3)}) calc(50% - 18px),
-      rgba(245,240,228,${(v * .75).toFixed(3)}) 50%,
-      rgba(210,204,190,${(v * .4).toFixed(3)}) calc(50% + 18px),
+      rgba(255,255,255,${(v*.55).toFixed(3)}) calc(50% - 18px),
+      rgba(245,240,228,${(v*.75).toFixed(3)}) 50%,
+      rgba(210,204,190,${(v*.4).toFixed(3)}) calc(50% + 18px),
       transparent calc(50% + 40px))`
   );
   const selfFrontBg = useTransform(selfShadowFront, v =>
-    `linear-gradient(270deg, rgba(12,8,2,${(v * .65).toFixed(3)}) 0%, transparent 45%)`
+    `linear-gradient(270deg, rgba(12,8,2,${(v*.65).toFixed(3)}) 0%, transparent 45%)`
   );
   const selfBackBg = useTransform(selfShadowBack, v =>
-    `linear-gradient(90deg, rgba(12,8,2,${(v * .5).toFixed(3)}) 0%, transparent 50%)`
+    `linear-gradient(90deg, rgba(12,8,2,${(v*.5).toFixed(3)}) 0%, transparent 50%)`
   );
-
-  // Cast shadow falls on the opposite static page
   const castGrad = dir === 'fwd'
     ? 'linear-gradient(90deg, rgba(14,9,2,0.32) 0%, rgba(14,9,2,0.12) 40%, transparent 100%)'
     : 'linear-gradient(270deg, rgba(14,9,2,0.32) 0%, rgba(14,9,2,0.12) 40%, transparent 100%)';
-  const castPos = dir === 'fwd'
-    ? { left: pageW + SPINE_W, right: 'auto' }
-    : { right: pageW + SPINE_W, left: 'auto' };
-
-  // The leaf itself: positioned over the page it starts from
-  const leafLeft = dir === 'fwd' ? pageW + SPINE_W : 0;
+  const castPos = dir === 'fwd' ? { left: 0, right: 'auto' } : { right: 0, left: 'auto' };
 
   return (
     <>
-      {/* Cast shadow on the opposite page */}
       <motion.div style={{
-        position: 'absolute',
-        top: 0,
-        height: '100%',
-        width: castWidth,
-        background: castGrad,
-        opacity: castOpacity,
-        zIndex: 20,
-        pointerEvents: 'none',
-        ...castPos,
+        position: 'absolute', top: 0, height: '100%',
+        width: castWidth, background: castGrad,
+        opacity: castOpacity, zIndex: 20, pointerEvents: 'none', ...castPos,
       }} />
 
-      {/* The flipping leaf — one page wide, positioned on its starting half */}
       <motion.div style={{
-        position: 'absolute',
-        top: 0,
-        left: leafLeft,
-        width: pageW,
-        height,
+        position: 'absolute', top: 0, left: 0,
+        width: pageW, height,
         transformStyle: 'preserve-3d',
-        transformOrigin: dir === 'fwd' ? 'left center' : 'right center',
+        transformOrigin: 'left center',
         rotateY: leafRY,
-        zIndex: 25,
-        pointerEvents: 'none',
-        willChange: 'transform',
+        zIndex: 25, pointerEvents: 'none', willChange: 'transform',
       }}>
         <div className="flip-face flip-face--front">
           {frontPage ? <PageContent page={frontPage} /> : <EmptyPage />}
           <div className="page-rule" />
-          <motion.div style={{ position: 'absolute', inset: 0, background: creaseBg, pointerEvents: 'none', zIndex: 6 }} />
-          <motion.div style={{ position: 'absolute', inset: 0, background: selfFrontBg, pointerEvents: 'none', zIndex: 7 }} />
+          <motion.div style={{ position:'absolute',inset:0,background:creaseBg,pointerEvents:'none',zIndex:6 }} />
+          <motion.div style={{ position:'absolute',inset:0,background:selfFrontBg,pointerEvents:'none',zIndex:7 }} />
           <motion.div style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5,
-            background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 60%, rgba(20,14,5,0.06) 100%)',
-            opacity: useTransform(creaseHighlight, [0, .5, 1], [0, 1, 0]),
+            position:'absolute',inset:0,pointerEvents:'none',zIndex:5,
+            background:'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 60%, rgba(20,14,5,0.06) 100%)',
+            opacity: useTransform(creaseHighlight,[0,.5,1],[0,1,0]),
           }} />
         </div>
         <div className="flip-face flip-face--back">
           {backPage ? <PageContent page={backPage} /> : <EmptyPage />}
           <div className="page-rule" />
-          <motion.div style={{ position: 'absolute', inset: 0, background: selfBackBg, pointerEvents: 'none', zIndex: 6 }} />
+          <motion.div style={{ position:'absolute',inset:0,background:selfBackBg,pointerEvents:'none',zIndex:6 }} />
         </div>
       </motion.div>
     </>
