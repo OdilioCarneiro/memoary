@@ -526,7 +526,6 @@ function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
     </>
   );
 }
-
 /* ══════════════════════════════════════════════
    4.  FLIP LEAF
    
