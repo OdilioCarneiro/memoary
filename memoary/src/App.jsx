@@ -193,7 +193,7 @@ const rightPages = pages.filter(p => p.lado === 'direita');
 
 const totalSpreads = Math.max(leftPages.length, rightPages.length);
 const maxSpreadIdx = totalSpreads - 1;
-  const maxSpreadIdx = totalSpreads - 1;
+  
 
 const spreads = useMemo(() => {
   const leftPages = pages.filter(p => p.lado === 'esquerda');
