@@ -157,11 +157,11 @@ export default function App() {
 
 /* ══════════════════════════════════════════════
    2.  BOOK VIEWER
-   
-   KEY FIX: The book uses a SPREAD layout.
+
+   The book uses a SPREAD layout.
    - Closed: shows only the cover (BOOK_W wide)
    - Open:   shows left + right pages side by side (BOOK_W * 2 + SPINE_W wide)
-   
+
    The container changes width when opened so both pages are visible.
 ══════════════════════════════════════════════ */
 function BookViewer({ onLoginClick, pages }) {
@@ -204,8 +204,7 @@ function BookViewer({ onLoginClick, pages }) {
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
 
-  // FIX: robust getSpread — don't rely on `lado` field alone.
-  // Index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
+  // getSpread — index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
   // For spreadIdx=-1 (cover state): show first page as right, nothing as left.
   const getSpread = useCallback((idx) => {
     if (idx < 0) return { left: null, right: pages[1] ?? null };
@@ -380,7 +379,7 @@ function BookViewer({ onLoginClick, pages }) {
             transformStyle: 'preserve-3d',
           }}>
             {/*
-              FIX: The outer book wrapper now has a dynamic width.
+              The outer book wrapper now has a dynamic width.
               - Closed: BOOK_W (cover only)
               - Open:   SPREAD_W = BOOK_W*2 + SPINE_W (full spread)
               Transition is smooth so it animates as the cover opens.
@@ -403,7 +402,7 @@ function BookViewer({ onLoginClick, pages }) {
               <div className="book-fore-edge" style={{ left: outerWidth, width: FORE_EDGE_W }} />
 
               {/*
-                FIX: StaticSpread now receives the full outerWidth so it can
+                StaticSpread receives the full outerWidth so it can
                 properly position left and right halves.
               */}
               <StaticSpread
@@ -489,15 +488,9 @@ function BookViewer({ onLoginClick, pages }) {
 /* ══════════════════════════════════════════════
    3.  STATIC SPREAD
 
-   FIX: The core rendering bug was here.
-   
-   Previously both page faces used `position: absolute; inset: 0` so they
-   stacked on top of each other — the right page always covered the left.
+   - Left page face:  positioned on the LEFT half  → left:0
+   - Right page face: positioned on the RIGHT half → left: pageW + SPINE_W (when open) or 0 (when closed)
 
-   Fix: 
-   - Left page face:  positioned on the LEFT half  → left:0, right:50% (or right: pageW)
-   - Right page face: positioned on the RIGHT half → left:50% (or left: pageW+SPINE_W)
-   
    When book is closed (spreadIdx < 0), only the right page is shown (full width).
 ══════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════
@@ -526,10 +519,11 @@ function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
     </>
   );
 }
+
 /* ══════════════════════════════════════════════
    4.  FLIP LEAF
-   
-   FIX: The leaf now flips from the spine (center of the spread).
+
+   The leaf flips from the spine (center of the spread).
    - Forward flip: right page of current spread turns → reveals left page of next
      Origin: left edge of the right half = pageW + SPINE_W
    - Backward flip: left page of current spread turns → reveals right page of prev

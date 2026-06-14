@@ -449,7 +449,14 @@ html, body, #root {
 .cover-face--back {
   border-radius: 5px 2px 2px 5px;
   transform: rotateY(180deg);
-  background: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--spine-1)    0%,
+    var(--spine-2)    2.5%,
+    var(--paper-edge) 4%,
+    var(--paper-warm) 8%,
+    var(--paper)      100%
+  );
 }
 .cover-img {
   position: absolute;
