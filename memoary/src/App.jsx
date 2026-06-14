@@ -187,19 +187,28 @@ function BookViewer({ onLoginClick, pages }) {
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
 
+const spreads = useMemo(() => {
+  const leftPages = pages.filter(p => p.lado === 'esquerda');
+  const rightPages = pages.filter(p => p.lado === 'direita');
+
+  const max = Math.max(leftPages.length, rightPages.length);
+
+  return Array.from({ length: max }, (_, i) => ({
+    left: leftPages[i] ?? null,
+    right: rightPages[i] ?? null
+  }));
+}, [pages]);
+
 const getSpread = useCallback((idx) => {
   if (idx < 0) {
-    // Capa: mostra a primeira página direita no lado direito
-    const firstRight = pages.find(p => p.lado === 'direita') ?? pages[0] ?? null;
-    return { left: null, right: firstRight };
+    return {
+      left: null,
+      right: pages.find(p => p.lado === 'direita') ?? null
+    };
   }
-  // Pega os dois documentos deste spread pelo índice
-  const par = pages.slice(idx * 2, idx * 2 + 2);
-  // Usa o campo `lado` para colocar cada um no lado correto
-  const left  = par.find(p => p.lado === 'esquerda') ?? null;
-  const right = par.find(p => p.lado === 'direita')  ?? null;
-  return { left, right };
-}, [pages]);
+
+  return spreads[idx] ?? { left: null, right: null };
+}, [spreads, pages]);
   const curSpread  = getSpread(spreadIdx);
   const isFlipping = flipState !== null;
 
