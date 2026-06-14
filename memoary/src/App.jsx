@@ -186,8 +186,8 @@ function BookViewer({ onLoginClick, pages }) {
   useEffect(() => {
     const updateScale = () => {
       const isMobile = window.innerWidth <= 899;
-      // Open book needs to fit SPREAD_W; closed fits BOOK_W
-      const targetW  = bookIsOpen ? SPREAD_W : BOOK_W;
+      // Sempre calcula pro SPREAD_W (largura fixa) — nunca recalcula no meio da animação
+      const targetW  = SPREAD_W;
       const availW   = isMobile
         ? window.innerWidth * 0.92
         : window.innerWidth * 0.62;
@@ -199,7 +199,7 @@ function BookViewer({ onLoginClick, pages }) {
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [bookIsOpen, SPREAD_W]);
+  }, [SPREAD_W]);
 
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
@@ -344,7 +344,9 @@ function BookViewer({ onLoginClick, pages }) {
   }, [spreadIdx, pages.length]);
 
   // Spread container width: when open shows both pages, when closed shows only cover
-  const outerWidth = bookIsOpen ? SPREAD_W : BOOK_W;
+  // Spread container width: SEMPRE fixo no tamanho do spread aberto.
+  // A capa cobre a página esquerda quando fechado; não há mudança de largura.
+  const outerWidth = SPREAD_W;
 
   return (
     <div ref={containerRef} className="app-container">
@@ -393,7 +395,7 @@ function BookViewer({ onLoginClick, pages }) {
                 transformStyle: 'preserve-3d',
                 position: 'relative',
                 boxShadow: '-10px 10px 20px rgba(20,14,5,0.2)',
-                transition: 'width 0.9s cubic-bezier(0.77,0,0.175,1), box-shadow 0.6s ease',
+                transition: 'box-shadow 0.6s ease',
               }}
             >
               {/* Structural faces — always relative to left edge */}
