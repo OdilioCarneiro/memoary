@@ -157,11 +157,11 @@ export default function App() {
 
 /* ══════════════════════════════════════════════
    2.  BOOK VIEWER
-
-   The book uses a SPREAD layout.
+   
+   KEY FIX: The book uses a SPREAD layout.
    - Closed: shows only the cover (BOOK_W wide)
    - Open:   shows left + right pages side by side (BOOK_W * 2 + SPINE_W wide)
-
+   
    The container changes width when opened so both pages are visible.
 ══════════════════════════════════════════════ */
 function BookViewer({ onLoginClick, pages }) {
@@ -186,8 +186,8 @@ function BookViewer({ onLoginClick, pages }) {
   useEffect(() => {
     const updateScale = () => {
       const isMobile = window.innerWidth <= 899;
-      // Sempre calcula pro SPREAD_W (largura fixa) — nunca recalcula no meio da animação
-      const targetW  = SPREAD_W;
+      // Open book needs to fit SPREAD_W; closed fits BOOK_W
+      const targetW  = bookIsOpen ? SPREAD_W : BOOK_W;
       const availW   = isMobile
         ? window.innerWidth * 0.92
         : window.innerWidth * 0.62;
@@ -199,24 +199,24 @@ function BookViewer({ onLoginClick, pages }) {
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [SPREAD_W]);
+  }, [bookIsOpen, SPREAD_W]);
 
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
 
-  // getSpread — index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
+  // FIX: robust getSpread — don't rely on `lado` field alone.
+  // Index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
   // For spreadIdx=-1 (cover state): show first page as right, nothing as left.
-const getSpread = useCallback((idx) => {
-  if (idx < 0) {
-    const firstLeft  = pages.find(p => p.lado === 'esquerda') ?? null;
-    const firstRight = pages.find(p => p.lado === 'direita') ?? pages[0] ?? null;
-    return { left: firstLeft, right: firstRight };
-  }
-  const par = pages.slice(idx * 2, idx * 2 + 2);
-  const left  = par.find(p => p.lado === 'esquerda') ?? par[0] ?? null;
-  const right = par.find(p => p.lado === 'direita')  ?? par[1] ?? null;
-  return { left, right };
-}, [pages]);
+  const getSpread = useCallback((idx) => {
+    if (idx < 0) {
+      // Cover view: right side shows the first page (or empty)
+      return { left: null, right: pages[0] ?? null };
+    }
+    const base  = idx * 2;
+    const left  = pages[base]     ?? null;
+    const right = pages[base + 1] ?? null;
+    return { left, right };
+  }, [pages]);
 
   const curSpread  = getSpread(spreadIdx);
   const isFlipping = flipState !== null;
@@ -263,25 +263,29 @@ const getSpread = useCallback((idx) => {
     });
   }, [isFlipping, bookIsOpen, spreadIdx, maxSpreadIdx, flipMV]);
 
- const flipBackward = useCallback(() => {
-    if (isFlipping || !bookIsOpen || spreadIdx <= 0) return;
+  const flipBackward = useCallback(() => {
+    if (isFlipping || !bookIsOpen || spreadIdx < 0) return;
     const from = spreadIdx, to = spreadIdx - 1;
-    setFlipState({ dir:'bwd', fromSpread:from, toSpread:to });
-    flipMV.set(-180); // Inicia da esquerda
-    animate(flipMV, 0, { duration: 0.78, ease: [0.4, 0.0, 0.2, 1.0], onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); } });
+    setFlipState({ dir: 'bwd', fromSpread: from, toSpread: to });
+    flipMV.set(0);
+    animate(flipMV, 180, {
+      duration: 0.78,
+      ease: [0.4, 0.0, 0.2, 1.0],
+      onComplete: () => { setSpreadIdx(to); flipMV.set(0); setFlipState(null); },
+    });
   }, [isFlipping, bookIsOpen, spreadIdx, flipMV]);
 
   const flipVisible = useMemo(() => {
     if (!flipState) return null;
     const { dir, fromSpread, toSpread } = flipState;
-    const from = getSpread(fromSpread); 
-    const to = getSpread(toSpread);
-    return { 
-      bgLeft: dir === 'fwd' ? from.left : to.left, 
-      bgRight: dir === 'fwd' ? to.right : from.right, 
-      leafFront: dir === 'fwd' ? from.right : to.right, 
-      leafBack: dir === 'fwd' ? to.left : from.left, 
-      dir 
+    const from = getSpread(fromSpread);
+    const to   = getSpread(toSpread);
+    return {
+      bgLeft:    to.left,
+      bgRight:   to.right,
+      leafFront: dir === 'fwd' ? from.right : from.left,
+      leafBack:  dir === 'fwd' ? to.left    : to.right,
+      dir,
     };
   }, [flipState, getSpread]);
 
@@ -290,14 +294,7 @@ const getSpread = useCallback((idx) => {
 
     const onUpdateShared = (self) => {
       const opened = self.progress > 0.62;
-     setBookIsOpen(p => {
-        if (p !== opened) {
-          // Atualiza para o spread 0 assim que o livro abre!
-          setSpreadIdx(curr => (opened ? Math.max(0, curr) : -1));
-          return opened;
-        }
-        return p;
-      });
+      setBookIsOpen(p => p === opened ? p : opened);
       scrollCueRef.current?.classList.toggle('is-hidden', self.progress > 0.04);
       headerRef.current?.classList.toggle('is-visible', self.progress > 0.32);
       if (bookOuterRef.current) {
@@ -350,9 +347,7 @@ const getSpread = useCallback((idx) => {
   }, [spreadIdx, pages.length]);
 
   // Spread container width: when open shows both pages, when closed shows only cover
-  // Spread container width: SEMPRE fixo no tamanho do spread aberto.
-  // A capa cobre a página esquerda quando fechado; não há mudança de largura.
-  const outerWidth = SPREAD_W;
+  const outerWidth = bookIsOpen ? SPREAD_W : BOOK_W;
 
   return (
     <div ref={containerRef} className="app-container">
@@ -387,7 +382,7 @@ const getSpread = useCallback((idx) => {
             transformStyle: 'preserve-3d',
           }}>
             {/*
-              The outer book wrapper now has a dynamic width.
+              FIX: The outer book wrapper now has a dynamic width.
               - Closed: BOOK_W (cover only)
               - Open:   SPREAD_W = BOOK_W*2 + SPINE_W (full spread)
               Transition is smooth so it animates as the cover opens.
@@ -401,7 +396,7 @@ const getSpread = useCallback((idx) => {
                 transformStyle: 'preserve-3d',
                 position: 'relative',
                 boxShadow: '-10px 10px 20px rgba(20,14,5,0.2)',
-                transition: 'box-shadow 0.6s ease',
+                transition: 'width 0.9s cubic-bezier(0.77,0,0.175,1), box-shadow 0.6s ease',
               }}
             >
               {/* Structural faces — always relative to left edge */}
@@ -410,7 +405,7 @@ const getSpread = useCallback((idx) => {
               <div className="book-fore-edge" style={{ left: outerWidth, width: FORE_EDGE_W }} />
 
               {/*
-                StaticSpread receives the full outerWidth so it can
+                FIX: StaticSpread now receives the full outerWidth so it can
                 properly position left and right halves.
               */}
               <StaticSpread
@@ -440,20 +435,30 @@ const getSpread = useCallback((idx) => {
                 />
               )}
 
-              <div ref={coverRef} className="book-cover" style={{ transformStyle:'preserve-3d', pointerEvents: bookIsOpen ? 'none' : 'auto' }}>
-  <div className="cover-face cover-face--front">
-    <img src={anuarioCapa} alt="Capa" className="cover-img" />
-    <div className="cover-emboss" />
-  </div>
-  <div className="cover-face cover-face--back">
-    {(!curSpread.left || !curSpread.left.elementos?.length) && (
-      <div className="endpaper">
-        <img src={logoSvg} alt="" className="endpaper-logo" />
-        <span className="endpaper-mark">Memoary</span>
-      </div>
-    )}
-  </div>
-</div>
+              {/* Cover — sits on right half when book is open (left page is revealed) */}
+              <div
+                ref={coverRef}
+                className="book-cover"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  pointerEvents: bookIsOpen ? 'none' : 'auto',
+                  // When open, cover flips from the right-half origin
+                  left: bookIsOpen ? BOOK_W + SPINE_W : 0,
+                  width: BOOK_W,
+                  transition: 'left 0.9s cubic-bezier(0.77,0,0.175,1)',
+                }}
+              >
+                <div className="cover-face cover-face--front">
+                  <img src={anuarioCapa} alt="Capa" className="cover-img" />
+                  <div className="cover-emboss" />
+                </div>
+                <div className="cover-face cover-face--back">
+                  <div className="endpaper">
+                    <img src={logoSvg} alt="" className="endpaper-logo" />
+                    <span className="endpaper-mark">Memoary</span>
+                  </div>
+                </div>
+              </div>
 
               {bookIsOpen && (
                 <nav ref={navRef} className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
@@ -489,42 +494,88 @@ const getSpread = useCallback((idx) => {
 /* ══════════════════════════════════════════════
    3.  STATIC SPREAD
 
-   - Left page face:  positioned on the LEFT half  → left:0
-   - Right page face: positioned on the RIGHT half → left: pageW + SPINE_W (when open) or 0 (when closed)
+   FIX: The core rendering bug was here.
+   
+   Previously both page faces used `position: absolute; inset: 0` so they
+   stacked on top of each other — the right page always covered the left.
 
+   Fix: 
+   - Left page face:  positioned on the LEFT half  → left:0, right:50% (or right: pageW)
+   - Right page face: positioned on the RIGHT half → left:50% (or left: pageW+SPINE_W)
+   
    When book is closed (spreadIdx < 0), only the right page is shown (full width).
 ══════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════
-   3.  STATIC SPREAD
-══════════════════════════════════════════════ */
-function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
-  const isFirst = spreadIdx < 0;
+function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoClick }) {
+  const pageW = BOOK_W; // each page is half the spread
+
   return (
-    <>
-      {left && (
-        <div className="static-page" style={{ zIndex }}>
-          <div className="page-face page-face--left">
-            <PageContent page={left} onPhotoClick={onPhotoClick} />
-            <div className="page-rule" />
-            {spreadIdx >= 0 && <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>}
-          </div>
+    <div style={{ position: 'absolute', inset: 0, zIndex }}>
+      {/* ── LEFT PAGE — only shown when book is open (spreadIdx >= 0) ── */}
+      {bookIsOpen && spreadIdx >= 0 && (
+        <div
+          className="page-face page-face--left"
+          style={{
+            position: 'absolute',
+            top:    0,
+            left:   0,
+            width:  pageW,
+            height: '100%',
+            overflow: 'hidden',
+          }}
+        >
+          {left
+            ? <PageContent page={left} onPhotoClick={onPhotoClick} />
+            : <EmptyPage />
+          }
+          <div className="page-rule" />
+          <span className="page-folio page-folio--left">{spreadIdx * 2 + 1}</span>
         </div>
       )}
-      <div className="static-page" style={{ zIndex, pointerEvents: 'none' }}>
-        <div className="page-face page-face--right" style={{ pointerEvents: 'auto' }}>
-          {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={isFirst} />}
-          <div className="page-rule" />
-          {spreadIdx >= 0 && <span className="page-folio page-folio--right">{spreadIdx*2+2}</span>}
-        </div>
+
+      {/* ── SPINE DIVIDER — only when open ── */}
+      {bookIsOpen && (
+        <div style={{
+          position: 'absolute',
+          top:    0,
+          left:   pageW,
+          width:  SPINE_W,
+          height: '100%',
+          background: 'linear-gradient(to right, #8a8070, #c8c0b0, #8a8070)',
+          zIndex: 3,
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      {/* ── RIGHT PAGE ── */}
+      <div
+        className="page-face page-face--right"
+        style={{
+          position: 'absolute',
+          top:    0,
+          // When open: sits to the right of the spine. When closed: fills whole width.
+          left:   bookIsOpen ? pageW + SPINE_W : 0,
+          width:  pageW,
+          height: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        {right
+          ? <PageContent page={right} onPhotoClick={onPhotoClick} />
+          : <EmptyPage isFirst={spreadIdx < 0} />
+        }
+        <div className="page-rule" />
+        {spreadIdx >= 0 && (
+          <span className="page-folio page-folio--right">{spreadIdx * 2 + 2}</span>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
 /* ══════════════════════════════════════════════
    4.  FLIP LEAF
-
-   The leaf flips from the spine (center of the spread).
+   
+   FIX: The leaf now flips from the spine (center of the spread).
    - Forward flip: right page of current spread turns → reveals left page of next
      Origin: left edge of the right half = pageW + SPINE_W
    - Backward flip: left page of current spread turns → reveals right page of prev

@@ -451,17 +451,6 @@ html, body, #root {
   transform: rotateY(180deg);
   background: transparent;
 }
-
-.cover-face--back .endpaper {
-  background: linear-gradient(
-    90deg,
-    var(--spine-1)    0%,
-    var(--spine-2)    2.5%,
-    var(--paper-edge) 4%,
-    var(--paper-warm) 8%,
-    var(--paper)      100%
-  );
-}
 .cover-img {
   position: absolute;
   inset: 0;
