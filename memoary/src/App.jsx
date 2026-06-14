@@ -209,19 +209,6 @@ const spreads = useMemo(() => {
 const maxSpreadIdx = spreads.length - 1;
   
 
-const spreads = useMemo(() => {
-  const leftPages = pages.filter(p => p.lado === 'esquerda');
-  const rightPages = pages.filter(p => p.lado === 'direita');
-
-  const max = Math.max(leftPages.length, rightPages.length);
-
-  return Array.from({ length: max }, (_, i) => ({
-    left: leftPages[i] ?? null,
-    right: rightPages[i] ?? null
-  }));
-}, [pages]);
-
-
  const curSpread = spreads[spreadIdx] ?? { left: null, right: null };
   const isFlipping = flipState !== null;
 
@@ -281,8 +268,8 @@ const spreads = useMemo(() => {
   const flipVisible = useMemo(() => {
     if (!flipState) return null;
     const { dir, fromSpread, toSpread } = flipState;
-    const from = getSpread(fromSpread);
-    const to   = getSpread(toSpread);
+    const from = spreads[fromSpread] ?? { left: null, right: null };
+    const to   = spreads[toSpread] ?? { left: null, right: null };
     return {
       bgLeft:    to.left,
       bgRight:   to.right,
