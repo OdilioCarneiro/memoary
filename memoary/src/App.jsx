@@ -163,15 +163,22 @@ function BookViewer({ onLoginClick, pages }) {
   const scrollCueRef  = useRef(null);
 
   const [bookIsOpen, setBookIsOpen] = useState(false);
+  const [isAnimatingIntro, setIsAnimatingIntro] = useState(true);
   const [spreadIdx,  setSpreadIdx]  = useState(-1);
   const [flipState,  setFlipState]  = useState(null);
   const [photoModal, setPhotoModal] = useState(null);
-useEffect(() => {
-  if (!pages?.length) return;
 
-  setSpreadIdx(-1);
-  setFlipState(null);
-}, []); // só na montagem
+  // Detecta quando a animação terminou e faz transição para modo interativo
+  useEffect(() => {
+    if (bookIsOpen && isAnimatingIntro) {
+      const timer = setTimeout(() => {
+        setIsAnimatingIntro(false);
+        setSpreadIdx(0); // Mostra a primeira página ao entrar no modo interativo
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [bookIsOpen, isAnimatingIntro]);
+
   const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
     const updateScale = () => {
@@ -190,23 +197,9 @@ useEffect(() => {
   }, []);
 
   const leftPages = pages.filter(p => p.lado === 'esquerda');
-const rightPages = pages.filter(p => p.lado === 'direita');
-
-const totalSpreads = Math.max(leftPages.length, rightPages.length);
-const maxSpreadIdx = totalSpreads - 1;
-  
-
-const spreads = useMemo(() => {
-  const leftPages = pages.filter(p => p.lado === 'esquerda');
   const rightPages = pages.filter(p => p.lado === 'direita');
-
-  const max = Math.max(leftPages.length, rightPages.length);
-
-  return Array.from({ length: max }, (_, i) => ({
-    left: leftPages[i] ?? null,
-    right: rightPages[i] ?? null
-  }));
-}, [pages]);
+  const totalSpreads = Math.max(leftPages.length, rightPages.length);
+  const maxSpreadIdx = totalSpreads - 1;
 
 const getSpread = useCallback((idx) => {
   const leftPages = pages.filter(p => p.lado === 'esquerda');
@@ -295,6 +288,31 @@ const getSpread = useCallback((idx) => {
   }, [flipState, getSpread]);
 
   useGSAP(() => {
+    // Se a animação inicial já terminou, posiciona o livro no centro e limpa a animação
+    if (!isAnimatingIntro) {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      gsap.set(containerRef.current, { clearProps: 'all' });
+      gsap.set([bookSceneRef.current, navRef.current, headerRef.current, heroRef.current], { clearProps: 'all' });
+      
+      // Posiciona o livro fixo no centro
+      gsap.set(bookSceneRef.current, { 
+        position: 'fixed',
+        left: '50%', 
+        top: '50%',
+        xPercent: -50, 
+        yPercent: -50,
+        rotationY: 0, 
+        rotationZ: 0, 
+        scale: 1,
+        zIndex: 20,
+      });
+      gsap.set([heroRef.current, scrollCueRef.current], { display: 'none' });
+      gsap.set(headerRef.current, { position: 'fixed', top: 0, y: 0, opacity: 1, display: 'block' });
+      gsap.set(navRef.current, { y: 0 });
+      coverRef.current?.classList.add('is-open');
+      return;
+    }
+
     let mm = gsap.matchMedia();
 
     const onUpdateShared = (self) => {
@@ -336,7 +354,7 @@ const getSpread = useCallback((idx) => {
       if (headerRef.current) tl.to(headerRef.current, { y:-120, opacity:0, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
-  }, { scope: containerRef, dependencies: [] });
+  }, { scope: containerRef, dependencies: [isAnimatingIntro] });
 
   const counterLabel = useMemo(() => {
     if (spreadIdx < 0) return 'Capa';

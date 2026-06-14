@@ -153,6 +153,14 @@ html, body, #root {
   align-items: center;
   background: var(--surface-0);
   isolation: isolate;
+  transition: height 0.6s ease, min-height 0.6s ease;
+}
+
+/* Quando o ScrollTrigger remove o pin, o hero volta ao tamanho normal */
+.viewport-hero:not(.is-pinned) {
+  height: auto;
+  min-height: auto;
+  padding: 60px 0;
 }
 
 /* Clip only the grain/radial layers, not the nav */
