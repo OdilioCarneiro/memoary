@@ -166,6 +166,10 @@ function BookViewer({ onLoginClick, pages }) {
   const [spreadIdx,  setSpreadIdx]  = useState(-1);
   const [flipState,  setFlipState]  = useState(null);
   const [photoModal, setPhotoModal] = useState(null);
+  useEffect(() => {
+  setSpreadIdx(-1);
+  setFlipState(null);
+}, [pages]);
 
   const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
@@ -184,7 +188,11 @@ function BookViewer({ onLoginClick, pages }) {
     return () => window.removeEventListener('resize', updateScale);
   }, []);
 
-  const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
+  const leftPages = pages.filter(p => p.lado === 'esquerda');
+const rightPages = pages.filter(p => p.lado === 'direita');
+
+const totalSpreads = Math.max(leftPages.length, rightPages.length);
+const maxSpreadIdx = totalSpreads - 1;
   const maxSpreadIdx = totalSpreads - 1;
 
 const spreads = useMemo(() => {
@@ -200,15 +208,21 @@ const spreads = useMemo(() => {
 }, [pages]);
 
 const getSpread = useCallback((idx) => {
+  const leftPages = pages.filter(p => p.lado === 'esquerda');
+  const rightPages = pages.filter(p => p.lado === 'direita');
+
   if (idx < 0) {
     return {
       left: null,
-      right: pages.find(p => p.lado === 'direita') ?? null
+      right: rightPages[0] ?? null
     };
   }
 
-  return spreads[idx] ?? { left: null, right: null };
-}, [spreads, pages]);
+  return {
+    left: leftPages[idx] ?? null,
+    right: rightPages[idx] ?? null
+  };
+}, [pages]);
   const curSpread  = getSpread(spreadIdx);
   const isFlipping = flipState !== null;
 
