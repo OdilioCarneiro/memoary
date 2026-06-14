@@ -103,6 +103,7 @@ export default function App() {
         if (!active) return;
         if (j.success) {
           let data = j.data;
+           console.log(j.data);
           if (data.length % 2 === 1) {
             data = [...data, { _id: 'spacer-' + Date.now(), elementos: [], tipoLayout: 'grid' }];
           }

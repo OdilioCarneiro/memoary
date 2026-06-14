@@ -525,6 +525,17 @@ html, body, #root {
     #e5e0d6 3%,
     var(--paper) 100%
   );
+   box-shadow: 
+   inset -8px 0 20px rgba(0,0,0,.08),
+    -20px 0 40px rgba(0,0,0,.12);
+     background: linear-gradient(
+    to left,
+    rgba(0,0,0,.12),
+    transparent
+  );
+
+  filter: blur(12px);
+  pointer-events: none;
 }
 
 .page-face--left::before {
