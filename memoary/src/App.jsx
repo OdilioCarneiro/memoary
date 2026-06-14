@@ -206,11 +206,17 @@ function BookViewer({ onLoginClick, pages }) {
 
   // getSpread — index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
   // For spreadIdx=-1 (cover state): show first page as right, nothing as left.
-  const getSpread = useCallback((idx) => {
-    if (idx < 0) return { left: null, right: pages[1] ?? null };
-    const base = idx * 2;
-    return { left: pages[base] ?? null, right: pages[base + 1] ?? null };
-  }, [pages]);
+const getSpread = useCallback((idx) => {
+  if (idx < 0) {
+    const firstLeft  = pages.find(p => p.lado === 'esquerda') ?? null;
+    const firstRight = pages.find(p => p.lado === 'direita') ?? pages[0] ?? null;
+    return { left: firstLeft, right: firstRight };
+  }
+  const par = pages.slice(idx * 2, idx * 2 + 2);
+  const left  = par.find(p => p.lado === 'esquerda') ?? par[0] ?? null;
+  const right = par.find(p => p.lado === 'direita')  ?? par[1] ?? null;
+  return { left, right };
+}, [pages]);
 
   const curSpread  = getSpread(spreadIdx);
   const isFlipping = flipState !== null;
@@ -502,12 +508,12 @@ function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
   const isFirst = spreadIdx < 0;
   return (
     <>
-      {spreadIdx > 0 && (
-        <div className="static-page" style={{ zIndex: 20, pointerEvents: 'none' }}>
-          <div className="page-face page-face--left" style={{ pointerEvents: 'auto' }}>
-            {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
+      {left && (
+        <div className="static-page" style={{ zIndex }}>
+          <div className="page-face page-face--left">
+            <PageContent page={left} onPhotoClick={onPhotoClick} />
             <div className="page-rule" />
-            <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
+            {spreadIdx >= 0 && <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>}
           </div>
         </div>
       )}
