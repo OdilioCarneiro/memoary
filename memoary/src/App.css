@@ -525,15 +525,15 @@ html, body, #root {
 
 /* Left page (recto) — gutter shadow from right spine */
 .page-face--left {
-  border-radius: 5px 2px 2px 5px;
-  /* SEM rotateY — página esquerda fica visível normalmente */
-  background: linear-gradient(
-    270deg,
-    #a8a39a 0%,
-    #cdc8bf 1%,
-    #e5e0d6 3%,
-    var(--paper) 100%
-  );
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 100%;
+  background: #fdfaf4;
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset -12px 0 20px -5px rgba(0,0,0,0.04);
+  overflow: hidden;
 }
 
 .page-face--left::before {
