@@ -166,11 +166,12 @@ function BookViewer({ onLoginClick, pages }) {
   const [spreadIdx,  setSpreadIdx]  = useState(-1);
   const [flipState,  setFlipState]  = useState(null);
   const [photoModal, setPhotoModal] = useState(null);
-  useEffect(() => {
+useEffect(() => {
+  if (!pages?.length) return;
+
   setSpreadIdx(-1);
   setFlipState(null);
-}, [pages]);
-
+}, []); // só na montagem
   const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
     const updateScale = () => {
