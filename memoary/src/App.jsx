@@ -441,26 +441,19 @@ const getSpread = useCallback((idx) => {
               )}
 
               <div ref={coverRef} className="book-cover" style={{ transformStyle:'preserve-3d', pointerEvents: bookIsOpen ? 'none' : 'auto' }}>
-                <div className="cover-face cover-face--front">
-                  <img src={anuarioCapa} alt="Capa" className="cover-img" />
-                  <div className="cover-emboss" />
-                </div>
-                {/* Se a página 0 tiver fotos, ela ganha fundo branco, senão mostra o padrão preto (endpaper) */}
-                <div className="cover-face cover-face--back" style={{ background: pages[0] ? '#fdfaf4' : '#1a1611', pointerEvents: bookIsOpen ? 'auto' : 'none' }}>
-                  {pages[0] ? (
-                    <div style={{ position: 'absolute', inset: 0 }}>
-                      <PageContent page={pages[0]} onPhotoClick={openPhoto} />
-                      <div className="page-rule" />
-                      <span className="page-folio page-folio--left">1</span>
-                    </div>
-                  ) : (
-                    <div className="endpaper">
-                      <img src={logoSvg} alt="" className="endpaper-logo" />
-                      <span className="endpaper-mark">Memoary</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+  <div className="cover-face cover-face--front">
+    <img src={anuarioCapa} alt="Capa" className="cover-img" />
+    <div className="cover-emboss" />
+  </div>
+  <div className="cover-face cover-face--back">
+    {(!curSpread.left || !curSpread.left.elementos?.length) && (
+      <div className="endpaper">
+        <img src={logoSvg} alt="" className="endpaper-logo" />
+        <span className="endpaper-mark">Memoary</span>
+      </div>
+    )}
+  </div>
+</div>
 
               {bookIsOpen && (
                 <nav ref={navRef} className="book-nav" style={{ bottom: -(BOOK_H * 0.12) }}>
