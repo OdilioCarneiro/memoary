@@ -559,7 +559,7 @@ export default function AdminPage() {
                   </button>
                 </div>
                 <small style={{ display: 'block', marginTop: 6, color: '#8b8679' }}>
-                  Cole uma URL ou faça upload. Configure <strong>VITE_CLOUDINARY_CLOUD_NAME</strong> e <strong>VITE_CLOUDINARY_UPLOAD_PRESET</strong> para upload direto.
+                  Cole uma URL ou faça upload.
                 </small>
               </div>
 
