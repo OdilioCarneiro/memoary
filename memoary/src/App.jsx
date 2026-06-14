@@ -10,25 +10,18 @@ import anuarioCapa from './assets/anuario.svg';
 import LoginPage   from './LoginPage';
 import AdminPage   from './AdminPage';
 
-/* ══════════════════════════════════════════════
-   CONSTANTS
-══════════════════════════════════════════════ */
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
   : 'https://memoary.onrender.com';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// BOOK_W = width of ONE page. The spread = BOOK_W * 2 when open.
 const BOOK_W      = 430;
 const BOOK_H      = 672;
 const SPINE_W     = 22;
 const FORE_EDGE_W = 7;
 const PERSP       = 2600;
 
-/* ══════════════════════════════════════════════
-   ICONS
-══════════════════════════════════════════════ */
 const ChevronLeft = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
     stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -86,7 +79,7 @@ function cloudinaryUrl(src, opts = {}) {
 }
 
 /* ══════════════════════════════════════════════
-   1.  ROOT ORCHESTRATOR
+   1. ROOT
 ══════════════════════════════════════════════ */
 export default function App() {
   const [view,        setView]        = useState('book');
@@ -125,8 +118,8 @@ export default function App() {
     setView(localStorage.getItem('adminToken') ? 'admin' : 'login');
 
   if (view === 'login') return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-0)', padding: 24 }}>
-      <button className="btn-back" onClick={() => setView('book')} style={{ marginBottom: 20 }}>
+    <div style={{ minHeight:'100vh', background:'var(--surface-0)', padding:24 }}>
+      <button className="btn-back" onClick={() => setView('book')} style={{ marginBottom:20 }}>
         <ChevronBack /> Voltar ao Anuário
       </button>
       <LoginPage onLoginSuccess={() => setView('admin')} />
@@ -134,7 +127,7 @@ export default function App() {
   );
 
   if (view === 'admin') return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-0)' }}>
+    <div style={{ minHeight:'100vh', background:'var(--surface-0)' }}>
       <header className="admin-bar">
         <div className="admin-bar-left">
           <button className="btn-back" onClick={() => { setView('book'); fetchData(); }}>
@@ -156,65 +149,48 @@ export default function App() {
 }
 
 /* ══════════════════════════════════════════════
-   2.  BOOK VIEWER
-   
-   KEY FIX: The book uses a SPREAD layout.
-   - Closed: shows only the cover (BOOK_W wide)
-   - Open:   shows left + right pages side by side (BOOK_W * 2 + SPINE_W wide)
-   
-   The container changes width when opened so both pages are visible.
+   2. BOOK VIEWER
 ══════════════════════════════════════════════ */
 function BookViewer({ onLoginClick, pages }) {
-  const containerRef = useRef(null);
-  const bookSceneRef = useRef(null);
-  const bookOuterRef = useRef(null);
-  const coverRef     = useRef(null);
-  const navRef       = useRef(null);
-  const headerRef    = useRef(null);
-  const heroRef      = useRef(null);
-  const scrollCueRef = useRef(null);
+  const containerRef  = useRef(null);
+  const bookSceneRef  = useRef(null);
+  const bookOuterRef  = useRef(null);
+  const coverRef      = useRef(null);
+  const navRef        = useRef(null);
+  const headerRef     = useRef(null);
+  const heroRef       = useRef(null);
+  const scrollCueRef  = useRef(null);
 
-  const [bookIsOpen,  setBookIsOpen]  = useState(false);
-  const [spreadIdx,   setSpreadIdx]   = useState(-1);
-  const [flipState,   setFlipState]   = useState(null);
-  const [photoModal,  setPhotoModal]  = useState(null);
-
-  // The open book is BOOK_W*2 + SPINE_W wide; closed is BOOK_W wide
-  const SPREAD_W = BOOK_W * 2 + SPINE_W;
+  const [bookIsOpen, setBookIsOpen] = useState(false);
+  const [spreadIdx,  setSpreadIdx]  = useState(-1);
+  const [flipState,  setFlipState]  = useState(null);
+  const [photoModal, setPhotoModal] = useState(null);
 
   const [bookScale, setBookScale] = useState(1);
   useEffect(() => {
     const updateScale = () => {
       const isMobile = window.innerWidth <= 899;
-      // Open book needs to fit SPREAD_W; closed fits BOOK_W
-      const targetW  = bookIsOpen ? SPREAD_W : BOOK_W;
-      const availW   = isMobile
-        ? window.innerWidth * 0.92
-        : window.innerWidth * 0.62;
-      const availH   = window.innerHeight * (isMobile ? 0.55 : 0.76);
-      const scaleW   = availW  / targetW;
-      const scaleH   = availH  / BOOK_H;
+      const availW = isMobile
+        ? window.innerWidth * 0.88
+        : window.innerWidth * 0.54;
+      const availH = window.innerHeight * (isMobile ? 0.58 : 0.78);
+      const scaleW = availW / BOOK_W;
+      const scaleH = availH / BOOK_H;
       setBookScale(Math.min(scaleW, scaleH, 1));
     };
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [bookIsOpen, SPREAD_W]);
+  }, []);
 
   const totalSpreads = Math.max(0, Math.ceil(pages.length / 2));
   const maxSpreadIdx = totalSpreads - 1;
 
-  // FIX: robust getSpread — don't rely on `lado` field alone.
-  // Index into pages array directly: spread i → pages[i*2] (left) and pages[i*2+1] (right).
-  // For spreadIdx=-1 (cover state): show first page as right, nothing as left.
   const getSpread = useCallback((idx) => {
-    if (idx < 0) {
-      // Cover view: right side shows the first page (or empty)
-      return { left: null, right: pages[0] ?? null };
-    }
-    const base  = idx * 2;
-    const left  = pages[base]     ?? null;
-    const right = pages[base + 1] ?? null;
+    if (idx < 0) return { left: null, right: pages[0] ?? null };
+    const par  = pages.slice(idx * 2, idx * 2 + 2);
+    const left  = par.find(p => p.lado === 'esquerda') ?? par[0] ?? null;
+    const right = par.find(p => p.lado === 'direita')  ?? par[1] ?? null;
     return { left, right };
   }, [pages]);
 
@@ -226,35 +202,34 @@ function BookViewer({ onLoginClick, pages }) {
       (pg.elementos ?? [])
         .filter(el => el.tipo === 'imagem' && el.url)
         .map(el => ({
-          id:          el.id ?? el.url,
-          url:         cloudinaryUrl(el.url),
+          id: el.id ?? el.url,
+          url: cloudinaryUrl(el.url),
           originalUrl: el.url,
-          legenda:     el.legenda ?? '',
+          legenda: el.legenda ?? '',
         }))
     )
   , [pages]);
 
   const openPhoto = useCallback((el) => {
     setPhotoModal({
-      photo:     { id: el.id ?? el.url, url: cloudinaryUrl(el.url), legenda: el.legenda ?? '' },
+      photo: { id: el.id ?? el.url, url: cloudinaryUrl(el.url), legenda: el.legenda ?? '' },
       allPhotos,
     });
   }, [allPhotos]);
 
-  /* ── Page turn motion values ── */
   const flipMV          = useMotionValue(0);
-  const foldProgress    = useTransform(flipMV, v => Math.sin((Math.abs(v) / 180) * Math.PI));
-  const creaseHighlight = useTransform(foldProgress, [0, .5, 1], [0, .42, 0]);
-  const selfShadowFront = useTransform(foldProgress, [0, .65, 1], [0, .38, .08]);
-  const selfShadowBack  = useTransform(foldProgress, [0, .4,  1], [.35, .12, 0]);
-  const castOpacity     = useTransform(foldProgress, [0, .3, .7, 1], [0, .5, .5, 0]);
-  const castWidth       = useTransform(foldProgress, [0, 1], ['0%', '50%']);
+  const foldProgress    = useTransform(flipMV, v => Math.sin((Math.abs(v)/180)*Math.PI));
+  const creaseHighlight = useTransform(foldProgress, [0,.5,1], [0,.42,0]);
+  const selfShadowFront = useTransform(foldProgress, [0,.65,1], [0,.38,.08]);
+  const selfShadowBack  = useTransform(foldProgress, [0,.4,1],  [.35,.12,0]);
+  const castOpacity     = useTransform(foldProgress, [0,.3,.7,1], [0,.5,.5,0]);
+  const castWidth       = useTransform(foldProgress, [0,1], ['0%','60%']);
   const leafRY          = flipMV;
 
   const flipForward = useCallback(() => {
     if (isFlipping || !bookIsOpen || spreadIdx >= maxSpreadIdx) return;
     const from = spreadIdx, to = spreadIdx + 1;
-    setFlipState({ dir: 'fwd', fromSpread: from, toSpread: to });
+    setFlipState({ dir:'fwd', fromSpread:from, toSpread:to });
     flipMV.set(0);
     animate(flipMV, -180, {
       duration: 0.78,
@@ -266,7 +241,7 @@ function BookViewer({ onLoginClick, pages }) {
   const flipBackward = useCallback(() => {
     if (isFlipping || !bookIsOpen || spreadIdx < 0) return;
     const from = spreadIdx, to = spreadIdx - 1;
-    setFlipState({ dir: 'bwd', fromSpread: from, toSpread: to });
+    setFlipState({ dir:'bwd', fromSpread:from, toSpread:to });
     flipMV.set(0);
     animate(flipMV, 180, {
       duration: 0.78,
@@ -305,36 +280,30 @@ function BookViewer({ onLoginClick, pages }) {
     };
 
     mm.add("(min-width: 900px)", () => {
-      gsap.set(bookSceneRef.current, { xPercent: -50, yPercent: -50, left: '72%', top: '48%', rotationY: -20, rotationZ: -5, scale: 0.78 });
-      if (navRef.current)    gsap.set(navRef.current,    { y: 0 });
-      if (headerRef.current) gsap.set(headerRef.current, { y: 0, opacity: 1 });
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'72%', top:'48%', rotationY:-20, rotationZ:-5, scale:0.78 });
+      if (navRef.current)    gsap.set(navRef.current,    { y:0 });
+      if (headerRef.current) gsap.set(headerRef.current, { y:0, opacity:1 });
       const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '.viewport-hero', start: 'top top', end: '+=3000',
-          scrub: 1.5, pin: true, onUpdate: onUpdateShared,
-        },
+        scrollTrigger: { trigger:'.viewport-hero', start:'top top', end:'+=3000', scrub:1.5, pin:true, onUpdate:onUpdateShared },
       });
-      tl.to(heroRef.current,      { opacity: 0, x: -90, duration: 0.4, ease: 'power2.in' }, 0);
-      tl.to(bookSceneRef.current, { left: '60%', xPercent: -50, top: '50%', rotationY: 0, rotationZ: 0, scale: 1, duration: 1, ease: 'expo.inOut' }, 0.08);
-      if (navRef.current)    tl.to(navRef.current,    { y: -24,  duration: 1.1, ease: 'expo.inOut' }, 0.08);
-      if (headerRef.current) tl.to(headerRef.current, { y: -120, opacity: 0, duration: 1.1, ease: 'expo.inOut' }, 0.08);
+      tl.to(heroRef.current,      { opacity:0, x:-90, duration:0.4, ease:'power2.in' }, 0);
+      tl.to(bookSceneRef.current, { left:'60%', xPercent:-50, top:'50%', rotationY:0, rotationZ:0, scale:1, duration:1, ease:'expo.inOut' }, 0.08);
+      if (navRef.current)    tl.to(navRef.current,    { y:-24,  duration:1.1, ease:'expo.inOut' }, 0.08);
+      if (headerRef.current) tl.to(headerRef.current, { y:-120, opacity:0, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
 
     mm.add("(max-width: 899px)", () => {
-      gsap.set(bookSceneRef.current, { xPercent: -50, yPercent: -50, left: '50%', top: '55%', rotationY: -15, rotationZ: -3, scale: 0.85 });
-      gsap.set(navRef.current,    { y: 0 });
-      gsap.set(headerRef.current, { y: 0, opacity: 1 });
+      gsap.set(bookSceneRef.current, { xPercent:-50, yPercent:-50, left:'50%', top:'55%', rotationY:-15, rotationZ:-3, scale:0.85 });
+      gsap.set(navRef.current,    { y:0 });
+      gsap.set(headerRef.current, { y:0, opacity:1 });
       const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '.viewport-hero', start: 'top top', end: '+=2500',
-          scrub: 1.5, pin: true, onUpdate: onUpdateShared,
-        },
+        scrollTrigger: { trigger:'.viewport-hero', start:'top top', end:'+=2500', scrub:1.5, pin:true, onUpdate:onUpdateShared },
       });
-      tl.to(heroRef.current,      { opacity: 0, y: -50, duration: 0.4, ease: 'power2.in' }, 0);
-      tl.to(bookSceneRef.current, { left: '50%', xPercent: -50, top: '50%', rotationY: 0, rotationZ: 0, scale: 1, duration: 1, ease: 'expo.inOut' }, 0.08);
-      if (navRef.current)    tl.to(navRef.current,    { y: -18,  duration: 1.1, ease: 'expo.inOut' }, 0.08);
-      if (headerRef.current) tl.to(headerRef.current, { y: -120, opacity: 0, duration: 1.1, ease: 'expo.inOut' }, 0.08);
+      tl.to(heroRef.current,      { opacity:0, y:-50, duration:0.4, ease:'power2.in' }, 0);
+      tl.to(bookSceneRef.current, { left:'50%', xPercent:-50, top:'50%', rotationY:0, rotationZ:0, scale:1, duration:1, ease:'expo.inOut' }, 0.08);
+      if (navRef.current)    tl.to(navRef.current,    { y:-18,  duration:1.1, ease:'expo.inOut' }, 0.08);
+      if (headerRef.current) tl.to(headerRef.current, { y:-120, opacity:0, duration:1.1, ease:'expo.inOut' }, 0.08);
       tl.add(() => { coverRef.current?.classList.add('is-open'); }, 0.63);
     });
   }, { scope: containerRef, dependencies: [] });
@@ -346,12 +315,8 @@ function BookViewer({ onLoginClick, pages }) {
     return `${lo}${lo !== hi ? `–${hi}` : ''} / ${pages.length}`;
   }, [spreadIdx, pages.length]);
 
-  // Spread container width: when open shows both pages, when closed shows only cover
-  const outerWidth = bookIsOpen ? SPREAD_W : BOOK_W;
-
   return (
     <div ref={containerRef} className="app-container">
-
       <header ref={headerRef} className="fixed-header">
         <div className="header-inner">
           <img src={logoSvg} alt="Memoary" className="logo-header" />
@@ -374,46 +339,28 @@ function BookViewer({ onLoginClick, pages }) {
         </div>
 
         <div ref={bookSceneRef} className="book-scene" style={{ perspective: PERSP }}>
-          {/* Responsive scale wrapper */}
           <div style={{
             transform: `scale(${bookScale})`,
             transformOrigin: 'center center',
             display: 'inline-block',
             transformStyle: 'preserve-3d',
           }}>
-            {/*
-              FIX: The outer book wrapper now has a dynamic width.
-              - Closed: BOOK_W (cover only)
-              - Open:   SPREAD_W = BOOK_W*2 + SPINE_W (full spread)
-              Transition is smooth so it animates as the cover opens.
-            */}
-            <div
-              ref={bookOuterRef}
-              className="book-outer"
+            <div ref={bookOuterRef} className="book-outer"
               style={{
-                width:  outerWidth,
-                height: BOOK_H,
-                transformStyle: 'preserve-3d',
-                position: 'relative',
+                width: BOOK_W, height: BOOK_H,
+                transformStyle: 'preserve-3d', position: 'relative',
                 boxShadow: '-10px 10px 20px rgba(20,14,5,0.2)',
-                transition: 'width 0.9s cubic-bezier(0.77,0,0.175,1), box-shadow 0.6s ease',
-              }}
-            >
-              {/* Structural faces — always relative to left edge */}
-              <div className="book-spine"     style={{ width: SPINE_W, height: BOOK_H, left: 0 }} />
-              <div className="book-top"       style={{ width: outerWidth, height: SPINE_W, top: -SPINE_W + 2 }} />
-              <div className="book-fore-edge" style={{ left: outerWidth, width: FORE_EDGE_W }} />
+                transition: 'box-shadow 0.6s ease',
+              }}>
 
-              {/*
-                FIX: StaticSpread now receives the full outerWidth so it can
-                properly position left and right halves.
-              */}
+              <div className="book-spine"     style={{ width:SPINE_W, height:BOOK_H, left:0 }} />
+              <div className="book-top"       style={{ width:BOOK_W,  height:SPINE_W, top:-SPINE_W+2 }} />
+              <div className="book-fore-edge" style={{ left:BOOK_W, width:FORE_EDGE_W }} />
+
               <StaticSpread
                 left={flipVisible ? flipVisible.bgLeft  : curSpread.left}
                 right={flipVisible ? flipVisible.bgRight : curSpread.right}
                 spreadIdx={flipState ? flipState.toSpread : spreadIdx}
-                bookIsOpen={bookIsOpen}
-                spreadW={outerWidth}
                 zIndex={2}
                 onPhotoClick={!flipState ? openPhoto : undefined}
               />
@@ -429,25 +376,13 @@ function BookViewer({ onLoginClick, pages }) {
                   selfShadowBack={selfShadowBack}
                   castOpacity={castOpacity}
                   castWidth={castWidth}
-                  spreadW={outerWidth}
-                  pageW={BOOK_W}
+                  width={BOOK_W}
                   height={BOOK_H}
                 />
               )}
 
-              {/* Cover — sits on right half when book is open (left page is revealed) */}
-              <div
-                ref={coverRef}
-                className="book-cover"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  pointerEvents: bookIsOpen ? 'none' : 'auto',
-                  // When open, cover flips from the right-half origin
-                  left: bookIsOpen ? BOOK_W + SPINE_W : 0,
-                  width: BOOK_W,
-                  transition: 'left 0.9s cubic-bezier(0.77,0,0.175,1)',
-                }}
-              >
+              <div ref={coverRef} className="book-cover"
+                style={{ transformStyle:'preserve-3d', pointerEvents: bookIsOpen ? 'none' : 'auto' }}>
                 <div className="cover-face cover-face--front">
                   <img src={anuarioCapa} alt="Capa" className="cover-img" />
                   <div className="cover-emboss" />
@@ -492,37 +427,26 @@ function BookViewer({ onLoginClick, pages }) {
 }
 
 /* ══════════════════════════════════════════════
-   3.  STATIC SPREAD
-
-   FIX: The core rendering bug was here.
-   
-   Previously both page faces used `position: absolute; inset: 0` so they
-   stacked on top of each other — the right page always covered the left.
-
-   Fix: 
-   - Left page face:  positioned on the LEFT half  → left:0, right:50% (or right: pageW)
-   - Right page face: positioned on the RIGHT half → left:50% (or left: pageW+SPINE_W)
-   
-   When book is closed (spreadIdx < 0), only the right page is shown (full width).
+   3. STATIC SPREAD
 ══════════════════════════════════════════════ */
-function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoClick }) {
+function StaticSpread({ left, right, spreadIdx, zIndex=1, onPhotoClick }) {
+  const isFirst = spreadIdx < 0;
   return (
     <>
-      {bookIsOpen && spreadIdx >= 0 && (
+      {spreadIdx >= 0 && (
         <div className="static-page" style={{ zIndex }}>
           <div className="page-face page-face--left">
             {left ? <PageContent page={left} onPhotoClick={onPhotoClick} /> : <EmptyPage />}
             <div className="page-rule" />
-            <span className="page-folio page-folio--left">{spreadIdx * 2 + 1}</span>
+            <span className="page-folio page-folio--left">{spreadIdx*2+1}</span>
           </div>
         </div>
       )}
-
       <div className="static-page" style={{ zIndex }}>
         <div className="page-face page-face--right">
-          {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={spreadIdx < 0} />}
+          {right ? <PageContent page={right} onPhotoClick={onPhotoClick} /> : <EmptyPage isFirst={isFirst} />}
           <div className="page-rule" />
-          {spreadIdx >= 0 && <span className="page-folio page-folio--right">{spreadIdx * 2 + 2}</span>}
+          {spreadIdx >= 0 && <span className="page-folio page-folio--right">{spreadIdx*2+2}</span>}
         </div>
       </div>
     </>
@@ -530,18 +454,12 @@ function StaticSpread({ left, right, spreadIdx, bookIsOpen, zIndex = 1, onPhotoC
 }
 
 /* ══════════════════════════════════════════════
-   4.  FLIP LEAF
-   
-   FIX: The leaf now flips from the spine (center of the spread).
-   - Forward flip: right page of current spread turns → reveals left page of next
-     Origin: left edge of the right half = pageW + SPINE_W
-   - Backward flip: left page of current spread turns → reveals right page of prev
-     Origin: right edge of the left half = pageW
+   4. FLIP LEAF
 ══════════════════════════════════════════════ */
 function FlipLeaf({
   dir, frontPage, backPage,
   leafRY, creaseHighlight, selfShadowFront, selfShadowBack,
-  castOpacity, castWidth, pageW, height,
+  castOpacity, castWidth, width, height,
 }) {
   const creaseBg = useTransform(creaseHighlight, v =>
     `linear-gradient(90deg,
@@ -560,23 +478,19 @@ function FlipLeaf({
   const castGrad = dir === 'fwd'
     ? 'linear-gradient(90deg, rgba(14,9,2,0.32) 0%, rgba(14,9,2,0.12) 40%, transparent 100%)'
     : 'linear-gradient(270deg, rgba(14,9,2,0.32) 0%, rgba(14,9,2,0.12) 40%, transparent 100%)';
-  const castPos = dir === 'fwd' ? { left: 0, right: 'auto' } : { right: 0, left: 'auto' };
+  const castPos = dir === 'fwd' ? { left:0, right:'auto' } : { right:0, left:'auto' };
 
   return (
     <>
       <motion.div style={{
-        position: 'absolute', top: 0, height: '100%',
-        width: castWidth, background: castGrad,
-        opacity: castOpacity, zIndex: 20, pointerEvents: 'none', ...castPos,
+        position:'absolute', top:0, height:'100%',
+        width:castWidth, background:castGrad,
+        opacity:castOpacity, zIndex:20, pointerEvents:'none', ...castPos,
       }} />
-
       <motion.div style={{
-        position: 'absolute', top: 0, left: 0,
-        width: pageW, height,
-        transformStyle: 'preserve-3d',
-        transformOrigin: 'left center',
-        rotateY: leafRY,
-        zIndex: 25, pointerEvents: 'none', willChange: 'transform',
+        position:'absolute', top:0, left:0, width, height,
+        transformStyle:'preserve-3d', transformOrigin:'left center',
+        rotateY:leafRY, zIndex:25, pointerEvents:'none', willChange:'transform',
       }}>
         <div className="flip-face flip-face--front">
           {frontPage ? <PageContent page={frontPage} /> : <EmptyPage />}
@@ -586,7 +500,7 @@ function FlipLeaf({
           <motion.div style={{
             position:'absolute',inset:0,pointerEvents:'none',zIndex:5,
             background:'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 60%, rgba(20,14,5,0.06) 100%)',
-            opacity: useTransform(creaseHighlight,[0,.5,1],[0,1,0]),
+            opacity:useTransform(creaseHighlight,[0,.5,1],[0,1,0]),
           }} />
         </div>
         <div className="flip-face flip-face--back">
@@ -600,7 +514,7 @@ function FlipLeaf({
 }
 
 /* ══════════════════════════════════════════════
-   5.  PAGE CONTENT
+   5. PAGE CONTENT
 ══════════════════════════════════════════════ */
 function PageContent({ page, onPhotoClick }) {
   if (!page?.elementos?.length) return <EmptyPage />;
@@ -615,61 +529,43 @@ function PageContent({ page, onPhotoClick }) {
             whileHover={onPhotoClick ? 'hover' : 'rest'}
             onClick={() => onPhotoClick?.(el)}
             style={{
-              position: 'absolute',
-              left:   el.x       ?? 0,
-              top:    el.y       ?? 0,
-              width:  el.largura ?? 200,
-              height: el.altura  ?? 150,
-              overflow: 'hidden',
-              borderRadius: 3,
-              border: '1px solid rgba(0,0,0,0.06)',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
+              position:'absolute', left: el.x ?? 0, top: el.y ?? 0,
+              width: el.largura ?? 200, height: el.altura ?? 150,
+              overflow:'hidden', borderRadius:3,
+              border:'1px solid rgba(0,0,0,0.06)',
+              boxShadow:'0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
               cursor: onPhotoClick ? 'pointer' : 'default',
-              pointerEvents: 'auto',
-              zIndex: 10,
+              pointerEvents:'auto', zIndex:10,
             }}
           >
             <img
               src={cloudinaryUrl(el.url)}
               alt={el.legenda ?? 'Foto do anuário'}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', backgroundColor: '#f5f5f5' }}
-              loading="lazy"
-              draggable={false}
+              style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', backgroundColor:'#f5f5f5' }}
+              loading="lazy" draggable={false}
             />
-
             {onPhotoClick && (
               <motion.div
-                variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  position: 'absolute', inset: 0,
-                  background: 'rgba(10, 7, 3, 0.35)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  pointerEvents: 'none', zIndex: 2,
-                }}
+                variants={{ rest:{ opacity:0 }, hover:{ opacity:1 } }}
+                transition={{ duration:0.2 }}
+                style={{ position:'absolute', inset:0, background:'rgba(10,7,3,0.35)', display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', zIndex:2 }}
               >
-                <motion.svg
-                  variants={{ rest: { scale: 0.75 }, hover: { scale: 1 } }}
+                <motion.svg variants={{ rest:{ scale:0.75 }, hover:{ scale:1 } }}
                   width="28" height="28" viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  <line x1="11" y1="8"  x2="11"    y2="14"    />
-                  <line x1="8"  y1="11" x2="14"    y2="11"    />
+                  stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
                 </motion.svg>
               </motion.div>
             )}
-
             {el.legenda && (
               <figcaption style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                background: 'rgba(253,249,244,0.96)', backdropFilter: 'blur(8px)',
-                padding: '6px 10px', fontSize: 15,
-                fontFamily: 'var(--f-display)', fontStyle: 'italic',
-                letterSpacing: '0.04em',
-                color: '#222', fontWeight: 500,
-                textAlign: 'center', zIndex: 3,
+                position:'absolute', bottom:0, left:0, right:0,
+                background:'rgba(253,249,244,0.96)', backdropFilter:'blur(8px)',
+                padding:'6px 10px', fontSize:15,
+                fontFamily:'var(--f-display)', fontStyle:'italic',
+                letterSpacing:'0.04em', color:'#222', fontWeight:500,
+                textAlign:'center', zIndex:3,
               }}>
                 {el.legenda}
               </figcaption>
@@ -682,7 +578,7 @@ function PageContent({ page, onPhotoClick }) {
 }
 
 /* ══════════════════════════════════════════════
-   6.  EMPTY PAGE
+   6. EMPTY PAGE
 ══════════════════════════════════════════════ */
 function EmptyPage({ isFirst = false }) {
   return (
@@ -699,33 +595,31 @@ function EmptyPage({ isFirst = false }) {
 }
 
 /* ══════════════════════════════════════════════
-   7.  AVATAR
+   7. AVATAR
 ══════════════════════════════════════════════ */
 const PALETTES = [
-  ['#e8d5b7', '#7a5c10'], ['#d4e8d5', '#1e5c22'], ['#d5dde8', '#1a3360'],
-  ['#e8d5e5', '#5c1a4e'], ['#e8e4d5', '#5c4e1a'], ['#d5e8e8', '#1a4e4e'],
-  ['#ead5d5', '#5c1a1a'], ['#e5d5e8', '#451a5c'],
+  ['#e8d5b7','#7a5c10'],['#d4e8d5','#1e5c22'],['#d5dde8','#1a3360'],
+  ['#e8d5e5','#5c1a4e'],['#e8e4d5','#5c4e1a'],['#d5e8e8','#1a4e4e'],
+  ['#ead5d5','#5c1a1a'],['#e5d5e8','#451a5c'],
 ];
-
 function Avatar({ name, size = 32 }) {
   const safeName = (name && typeof name === 'string' && name.trim() !== '') ? name : 'Visitante';
   const charCode = safeName.charCodeAt(0) || 0;
-  const idx      = isNaN(charCode) ? 0 : (charCode % PALETTES.length);
-  const palette  = PALETTES[idx] || PALETTES[0];
+  const idx = isNaN(charCode) ? 0 : (charCode % PALETTES.length);
+  const palette = PALETTES[idx] || PALETTES[0];
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: palette[0], color: palette[1],
-      flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.37, fontWeight: 600, fontFamily: 'var(--f-ui)', userSelect: 'none',
+      width:size, height:size, borderRadius:'50%', background:palette[0], color:palette[1],
+      flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize:size*0.37, fontWeight:600, fontFamily:'var(--f-ui)', userSelect:'none',
     }}>
-      {safeName.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('')}
+      {safeName.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('')}
     </div>
   );
 }
 
 /* ══════════════════════════════════════════════
-   8.  COMMENTS HOOK
+   8. COMMENTS HOOK
 ══════════════════════════════════════════════ */
 function useComments(photoId) {
   const [comments, setComments] = useState([]);
@@ -736,9 +630,9 @@ function useComments(photoId) {
 
   useEffect(() => {
     if (guestName) return;
-    const k   = 'mm_guest_name';
-    const adj = ['Alegre', 'Curioso', 'Animado', 'Saudoso'];
-    const n   = adj[Math.floor(Math.random() * adj.length)] + ' ' + Math.floor(Math.random() * 900 + 100);
+    const k = 'mm_guest_name';
+    const adj = ['Alegre','Curioso','Animado','Saudoso'];
+    const n = adj[Math.floor(Math.random()*adj.length)] + ' ' + Math.floor(Math.random()*900+100);
     localStorage.setItem(k, n);
     Promise.resolve().then(() => setGuestName(n));
   }, [guestName]);
@@ -764,9 +658,8 @@ function useComments(photoId) {
     setPosting(true);
     try {
       const r = await fetch(`${API_URL}/api/comentarios`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoId, autor: guestName, texto: texto.trim() }),
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ photoId, autor:guestName, texto:texto.trim() }),
       });
       const j = await r.json();
       if (j.success) { setComments(p => [...p, j.data]); return true; }
@@ -777,16 +670,16 @@ function useComments(photoId) {
 
   const toggleLike = useCallback(async (cid) => {
     const had = !!likedMap[cid];
-    setLikedMap(m => ({ ...m, [cid]: !had }));
-    setComments(p => p.map(c => c._id === cid ? { ...c, likes: (c.likes ?? 0) + (had ? -1 : 1) } : c));
+    setLikedMap(m => ({ ...m, [cid]:!had }));
+    setComments(p => p.map(c => c._id===cid ? { ...c, likes:(c.likes??0)+(had?-1:1) } : c));
     try {
       await fetch(`${API_URL}/api/comentarios/${cid}/like`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unlike: had }),
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ unlike:had }),
       });
     } catch {
-      setLikedMap(m => ({ ...m, [cid]: had }));
-      setComments(p => p.map(c => c._id === cid ? { ...c, likes: (c.likes ?? 0) + (had ? 1 : -1) } : c));
+      setLikedMap(m => ({ ...m, [cid]:had }));
+      setComments(p => p.map(c => c._id===cid ? { ...c, likes:(c.likes??0)+(had?1:-1) } : c));
     }
   }, [likedMap]);
 
@@ -794,16 +687,16 @@ function useComments(photoId) {
 }
 
 /* ══════════════════════════════════════════════
-   9.  TIME HELPER
+   9. TIME HELPER
 ══════════════════════════════════════════════ */
 function timeAgo(d) {
   if (!d) return '';
   const s = Math.floor((Date.now() - new Date(d)) / 1000);
   if (s < 60) return 'agora';
-  const m = Math.floor(s / 60); if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60); if (h < 24) return `${h}h`;
-  const dy = Math.floor(h / 24); if (dy < 7) return `${dy}d`;
-  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  const m = Math.floor(s/60); if (m < 60) return `${m}m`;
+  const h = Math.floor(m/60); if (h < 24) return `${h}h`;
+  const dy = Math.floor(h/24); if (dy < 7) return `${dy}d`;
+  return new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
 }
 
 /* ══════════════════════════════════════════════
@@ -812,39 +705,26 @@ function timeAgo(d) {
 function CommentRow({ c, liked, onLike }) {
   const [hover, setHover] = useState(false);
   return (
-    <div
-      style={{ display: 'flex', gap: 10, padding: '13px 0', borderBottom: '1px solid var(--surface-2)' }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
+    <div style={{ display:'flex', gap:10, padding:'13px 0', borderBottom:'1px solid var(--surface-2)' }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <Avatar name={c.autor} size={32} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--ink)', margin: 0 }}>
-          <strong style={{ fontWeight: 600, marginRight: 5, letterSpacing: '-0.01em' }}>
-            {c.autor || 'Visitante'}
-          </strong>
+      <div style={{ flex:1, minWidth:0 }}>
+        <p style={{ fontSize:13, lineHeight:1.5, color:'var(--ink)', margin:0 }}>
+          <strong style={{ fontWeight:600, marginRight:5 }}>{c.autor || 'Visitante'}</strong>
           {c.texto}
         </p>
-        <div style={{ display: 'flex', gap: 12, marginTop: 5 }}>
-          <span style={{ fontSize: 11, color: 'var(--ink-25)' }}>{timeAgo(c.criadoEm)}</span>
-          {c.likes > 0 && (
-            <span style={{ fontSize: 11, color: 'var(--ink-25)' }}>
-              {c.likes} curtida{c.likes !== 1 ? 's' : ''}
-            </span>
-          )}
+        <div style={{ display:'flex', gap:12, marginTop:5 }}>
+          <span style={{ fontSize:11, color:'var(--ink-25)' }}>{timeAgo(c.criadoEm)}</span>
+          {c.likes > 0 && <span style={{ fontSize:11, color:'var(--ink-25)' }}>{c.likes} curtida{c.likes!==1?'s':''}</span>}
         </div>
       </div>
-      <button
-        onClick={() => onLike(c._id)}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
-          color:     liked ? '#e05a6a' : (hover ? 'var(--ink-50)' : 'transparent'),
-          transition: 'color 0.18s, transform 0.18s',
-          transform:  liked ? 'scale(1.18)' : 'scale(1)',
-          flexShrink: 0, alignSelf: 'flex-start', marginTop: 2,
-        }}
-        aria-label={liked ? 'Descurtir' : 'Curtir'}
-      >
+      <button onClick={() => onLike(c._id)} style={{
+        background:'none', border:'none', cursor:'pointer', padding:'2px 4px',
+        color: liked ? '#e05a6a' : (hover ? 'var(--ink-50)' : 'transparent'),
+        transition:'color 0.18s, transform 0.18s',
+        transform: liked ? 'scale(1.18)' : 'scale(1)',
+        flexShrink:0, alignSelf:'flex-start', marginTop:2,
+      }} aria-label={liked?'Descurtir':'Curtir'}>
         <IcoHeart filled={liked} />
       </button>
     </div>
@@ -855,9 +735,9 @@ function CommentRow({ c, liked, onLike }) {
    11. PHOTO MODAL
 ══════════════════════════════════════════════ */
 function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
-  const [cur,          setCur]         = useState(initialPhoto);
-  const [imgLoaded,    setImgLoaded]   = useState(false);
-  const [commentText,  setCommentText] = useState('');
+  const [cur,         setCur]         = useState(initialPhoto);
+  const [imgLoaded,   setImgLoaded]   = useState(false);
+  const [commentText, setCommentText] = useState('');
   const inputRef = useRef(null);
   const listRef  = useRef(null);
 
@@ -865,7 +745,7 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
     = useComments(cur?.id ?? cur?.url);
 
   const curIdx = useMemo(() =>
-    allPhotos.findIndex(p => (p.id ?? p.url) === (cur?.id ?? cur?.url))
+    allPhotos.findIndex(p => (p.id??p.url) === (cur?.id??cur?.url))
   , [allPhotos, cur]);
 
   const hasPrev = curIdx > 0;
@@ -873,16 +753,14 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
 
   const goTo = useCallback((idx) => {
     if (idx < 0 || idx >= allPhotos.length) return;
-    setImgLoaded(false);
-    setCur(allPhotos[idx]);
-    setCommentText('');
+    setImgLoaded(false); setCur(allPhotos[idx]); setCommentText('');
   }, [allPhotos]);
 
   useEffect(() => {
     const h = (e) => {
-      if (e.key === 'Escape')     onClose();
-      if (e.key === 'ArrowLeft')  goTo(curIdx - 1);
-      if (e.key === 'ArrowRight') goTo(curIdx + 1);
+      if (e.key==='Escape')     onClose();
+      if (e.key==='ArrowLeft')  goTo(curIdx-1);
+      if (e.key==='ArrowRight') goTo(curIdx+1);
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -910,221 +788,131 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
   }, []);
 
   const [showCommentsMobile, setShowCommentsMobile] = useState(true);
-
   if (!cur || !cur.url) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9000,
-        background: 'rgba(8,5,2,0.93)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: isMobileModal ? 0 : 20,
-      }}
+      initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+      transition={{ duration:0.2 }} onClick={onClose}
+      style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(8,5,2,0.93)',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        padding: isMobileModal ? 0 : 20 }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 16 }}
-        animate={{ opacity: 1, scale: 1,    y: 0  }}
-        exit={{    opacity: 0, scale: 0.97, y: 16 }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity:0, scale:0.97, y:16 }} animate={{ opacity:1, scale:1, y:0 }}
+        exit={{ opacity:0, scale:0.97, y:16 }} transition={{ duration:0.3, ease:[0.16,1,0.3,1] }}
         onClick={e => e.stopPropagation()}
-        style={{
-          display: 'flex',
-          flexDirection: isMobileModal ? 'column' : 'row',
-          width:  isMobileModal ? '100vw'              : 'min(200vw, 1080px)',
-          height: isMobileModal ? '100dvh'             : 'min(200vh, 700px)',
-          borderRadius: isMobileModal ? 0 : 14,
-          overflow: 'hidden',
-          background: 'var(--white)',
-          boxShadow: '0 48px 120px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.35)',
-        }}
+        style={{ display:'flex', flexDirection: isMobileModal ? 'column' : 'row',
+          width: isMobileModal ? '100vw' : 'min(200vw, 1080px)',
+          height: isMobileModal ? '100dvh' : 'min(200vh, 700px)',
+          borderRadius: isMobileModal ? 0 : 14, overflow:'hidden',
+          background:'var(--white)',
+          boxShadow:'0 48px 120px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.35)' }}
       >
-        {/* Photo area */}
-        <div style={{
-          flex: isMobileModal ? (showCommentsMobile ? '0 0 52%' : '1 1 auto') : '1 1 58%',
-          minWidth: 0, minHeight: isMobileModal ? 0 : undefined,
-          background: '#0d0a06',
-          position: 'relative',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `url(${cur.url})`,
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            filter: 'blur(28px) brightness(0.28) saturate(0.8)',
-            transform: 'scale(1.12)',
-          }} />
-
-          <motion.img
-            key={cur.url}
-            src={cur.url}
-            alt={cur.legenda || 'Foto do anuário'}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: imgLoaded ? 1 : 0 }}
-            transition={{ duration: 0.38 }}
-            onLoad={() => setImgLoaded(true)}
-            style={{
-              position: 'relative', zIndex: 1,
-              maxWidth: '92%', maxHeight: '88%',
-              objectFit: 'contain', borderRadius: 4,
-              userSelect: 'none', pointerEvents: 'none',
-            }}
-            draggable={false}
-          />
-
+        <div style={{ flex: isMobileModal ? (showCommentsMobile ? '0 0 52%' : '1 1 auto') : '1 1 58%',
+          minWidth:0, minHeight: isMobileModal ? 0 : undefined,
+          background:'#0d0a06', position:'relative',
+          display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+          <div style={{ position:'absolute', inset:0, backgroundImage:`url(${cur.url})`,
+            backgroundSize:'cover', backgroundPosition:'center',
+            filter:'blur(28px) brightness(0.28) saturate(0.8)', transform:'scale(1.12)' }} />
+          <motion.img key={cur.url} src={cur.url} alt={cur.legenda||'Foto'}
+            initial={{ opacity:0 }} animate={{ opacity: imgLoaded ? 1 : 0 }}
+            transition={{ duration:0.38 }} onLoad={() => setImgLoaded(true)}
+            style={{ position:'relative', zIndex:1, maxWidth:'92%', maxHeight:'88%',
+              objectFit:'contain', borderRadius:4, userSelect:'none', pointerEvents:'none' }}
+            draggable={false} />
           {cur.legenda && (
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
-              background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
-              padding: '36px 24px 18px',
-            }}>
-              <p style={{
-                fontFamily: 'var(--f-display)', fontStyle: 'italic',
-                fontSize: 13, color: 'rgba(255,255,255,0.8)',
-                letterSpacing: '0.035em', textAlign: 'center', margin: 0,
-              }}>
+            <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:2,
+              background:'linear-gradient(transparent, rgba(0,0,0,0.75))', padding:'36px 24px 18px' }}>
+              <p style={{ fontFamily:'var(--f-display)', fontStyle:'italic', fontSize:13,
+                color:'rgba(255,255,255,0.8)', letterSpacing:'0.035em', textAlign:'center', margin:0 }}>
                 {cur.legenda}
               </p>
             </div>
           )}
-
           {hasPrev && (
-            <button onClick={() => goTo(curIdx - 1)} style={{
-              position: 'absolute', top: '50%', left: 14, transform: 'translateY(-50%)',
-              zIndex: 3, width: 42, height: 42, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'background 0.2s',
-            }}>
+            <button onClick={() => goTo(curIdx-1)} style={{
+              position:'absolute', top:'50%', left:14, transform:'translateY(-50%)',
+              zIndex:3, width:42, height:42, borderRadius:'50%',
+              background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+              cursor:'pointer', backdropFilter:'blur(8px)' }}>
               <IcoNavLeft />
             </button>
           )}
           {hasNext && (
-            <button onClick={() => goTo(curIdx + 1)} style={{
-              position: 'absolute', top: '50%', right: 14, transform: 'translateY(-50%)',
-              zIndex: 3, width: 42, height: 42, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'background 0.2s',
-            }}>
+            <button onClick={() => goTo(curIdx+1)} style={{
+              position:'absolute', top:'50%', right:14, transform:'translateY(-50%)',
+              zIndex:3, width:42, height:42, borderRadius:'50%',
+              background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+              cursor:'pointer', backdropFilter:'blur(8px)' }}>
               <IcoNavRight />
             </button>
           )}
         </div>
 
-        {/* Comments panel */}
         {(!isMobileModal || showCommentsMobile) && (
-          <div style={{
-            flex: isMobileModal ? '1 1 auto' : '1 1 42%',
-            minWidth: 0,
-            display: 'flex', flexDirection: 'column',
-            background: 'var(--surface-0)',
-            borderTop: isMobileModal ? '1px solid var(--surface-2)' : 'none',
-          }}>
-            <header style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '14px 18px', borderBottom: '1px solid var(--surface-2)',
-              flexShrink: 0,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontFamily: 'var(--f-display)', fontSize: 17, fontWeight: 500, fontStyle: 'italic', color: 'var(--ink)' }}>
-                  Comentários
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-50)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 10 }}>
-                  {comments.length}
-                </span>
+          <div style={{ flex: isMobileModal ? '1 1 auto' : '1 1 42%', minWidth:0,
+            display:'flex', flexDirection:'column', background:'var(--surface-0)',
+            borderTop: isMobileModal ? '1px solid var(--surface-2)' : 'none' }}>
+            <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+              padding:'14px 18px', borderBottom:'1px solid var(--surface-2)', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontFamily:'var(--f-display)', fontSize:17, fontWeight:500, fontStyle:'italic', color:'var(--ink)' }}>Comentários</span>
+                <span style={{ fontSize:11, fontWeight:600, color:'var(--ink-50)', background:'var(--surface-2)', padding:'2px 8px', borderRadius:10 }}>{comments.length}</span>
               </div>
-              <button
-                onClick={isMobileModal ? () => setShowCommentsMobile(false) : onClose}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-50)', padding: 4, marginRight: -4 }}
-              >
+              <button onClick={isMobileModal ? () => setShowCommentsMobile(false) : onClose}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--ink-50)', padding:4 }}>
                 <IcoClose />
               </button>
             </header>
-
-            <div ref={listRef} className="photo-comment-list" style={{
-              flex: 1, overflowY: 'auto', padding: '0 18px',
-              display: 'flex', flexDirection: 'column',
-            }}>
+            <div ref={listRef} className="photo-comment-list"
+              style={{ flex:1, overflowY:'auto', padding:'0 18px', display:'flex', flexDirection:'column' }}>
               {loading ? (
-                <div style={{ margin: 'auto', color: 'var(--ink-25)' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'lbSpin 1s linear infinite' }}>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                <div style={{ margin:'auto', color:'var(--ink-25)' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation:'lbSpin 1s linear infinite' }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                   </svg>
                 </div>
               ) : comments.length === 0 ? (
-                <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--ink-25)', maxWidth: 200 }}>
+                <div style={{ margin:'auto', textAlign:'center', color:'var(--ink-25)', maxWidth:200 }}>
                   <IcoHeart filled={false} />
-                  <p style={{ marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
-                    Seja o primeiro a deixar uma memória nesta foto.
-                  </p>
+                  <p style={{ marginTop:12, fontSize:13, lineHeight:1.5 }}>Seja o primeiro a deixar uma memória nesta foto.</p>
                 </div>
               ) : (
-                comments.map(c => (
-                  <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />
-                ))
+                comments.map(c => <CommentRow key={c._id} c={c} liked={likedMap[c._id]} onLike={toggleLike} />)
               )}
             </div>
-
-            <div style={{ padding: '14px 18px', borderTop: '1px solid var(--surface-2)', background: 'var(--white)', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ padding:'14px 18px', borderTop:'1px solid var(--surface-2)', background:'var(--white)', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Avatar name={guestName} size={30} />
-                <input
-                  ref={inputRef}
-                  value={commentText}
+                <input ref={inputRef} value={commentText}
                   onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handlePost()}
-                  placeholder="Adicione um comentário…"
-                  disabled={posting}
-                  style={{
-                    flex: 1, border: 'none', background: 'transparent',
-                    outline: 'none', fontSize: 13, color: 'var(--ink)',
-                    fontFamily: 'var(--f-ui)', padding: '8px 0',
-                  }}
-                />
-                <button
-                  onClick={handlePost}
-                  disabled={posting || !commentText.trim()}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                  onKeyDown={e => e.key==='Enter' && handlePost()}
+                  placeholder="Adicione um comentário…" disabled={posting}
+                  style={{ flex:1, border:'none', background:'transparent', outline:'none',
+                    fontSize:13, color:'var(--ink)', fontFamily:'var(--f-ui)', padding:'8px 0' }} />
+                <button onClick={handlePost} disabled={posting || !commentText.trim()}
+                  style={{ background:'none', border:'none', cursor:'pointer', padding:4,
                     color: commentText.trim() ? 'var(--gold)' : 'var(--ink-10)',
-                    transition: 'color 0.15s, transform 0.15s',
-                    transform: posting ? 'scale(0.85)' : 'scale(1)',
-                    display: 'flex', alignItems: 'center',
-                  }}
-                  aria-label="Publicar"
-                >
-                  <IcoSend />
-                </button>
+                    transition:'color 0.15s', display:'flex', alignItems:'center' }}
+                  aria-label="Publicar"><IcoSend /></button>
               </div>
             </div>
           </div>
         )}
       </motion.div>
-
       {!isMobileModal && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          style={{
-            position: 'fixed', bottom: 18, left: '50%', transform: 'translateX(-50%)',
-            fontSize: 10, color: 'rgba(255,255,255,0.22)',
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            pointerEvents: 'none', zIndex: 9001, whiteSpace: 'nowrap',
-          }}
-        >
+        <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.8 }}
+          style={{ position:'fixed', bottom:18, left:'50%', transform:'translateX(-50%)',
+            fontSize:10, color:'rgba(255,255,255,0.22)', letterSpacing:'0.12em',
+            textTransform:'uppercase', pointerEvents:'none', zIndex:9001, whiteSpace:'nowrap' }}>
           esc · fechar — ← → · navegar
         </motion.p>
       )}
-
-      <style>{`@keyframes lbSpin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes lbSpin { to { transform:rotate(360deg); } }`}</style>
     </motion.div>
   );
 }
