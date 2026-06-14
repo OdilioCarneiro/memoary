@@ -189,27 +189,42 @@ useEffect(() => {
     return () => window.removeEventListener('resize', updateScale);
   }, []);
 
-const spreads = useMemo(() => {
-  const ordered = [...pages].sort(
-    (a, b) => new Date(a.criadoEm) - new Date(b.criadoEm)
-  );
+  const leftPages = pages.filter(p => p.lado === 'esquerda');
+const rightPages = pages.filter(p => p.lado === 'direita');
 
-  const result = [];
-
-  for (let i = 0; i < ordered.length; i += 2) {
-    result.push({
-      left: ordered[i] ?? null,
-      right: ordered[i + 1] ?? null,
-    });
-  }
-
-  return result;
-}, [pages]);
-
-const maxSpreadIdx = spreads.length - 1;
+const totalSpreads = Math.max(leftPages.length, rightPages.length);
+const maxSpreadIdx = totalSpreads - 1;
   
 
- const curSpread = spreads[spreadIdx] ?? { left: null, right: null };
+const spreads = useMemo(() => {
+  const leftPages = pages.filter(p => p.lado === 'esquerda');
+  const rightPages = pages.filter(p => p.lado === 'direita');
+
+  const max = Math.max(leftPages.length, rightPages.length);
+
+  return Array.from({ length: max }, (_, i) => ({
+    left: leftPages[i] ?? null,
+    right: rightPages[i] ?? null
+  }));
+}, [pages]);
+
+const getSpread = useCallback((idx) => {
+  const leftPages = pages.filter(p => p.lado === 'esquerda');
+  const rightPages = pages.filter(p => p.lado === 'direita');
+
+  if (idx < 0) {
+    return {
+      left: null,
+      right: rightPages[0] ?? null
+    };
+  }
+
+  return {
+    left: leftPages[idx] ?? null,
+    right: rightPages[idx] ?? null
+  };
+}, [pages]);
+  const curSpread  = getSpread(spreadIdx);
   const isFlipping = flipState !== null;
 
   const allPhotos = useMemo(() =>
@@ -242,7 +257,7 @@ const maxSpreadIdx = spreads.length - 1;
   const leafRY          = flipMV;
 
   const flipForward = useCallback(() => {
-    if (isFlipping || !bookIsOpen || spreadIdx >= spreads.length - 1) return;
+    if (isFlipping || !bookIsOpen || spreadIdx >= maxSpreadIdx) return;
     const from = spreadIdx, to = spreadIdx + 1;
     setFlipState({ dir:'fwd', fromSpread:from, toSpread:to });
     flipMV.set(0);
@@ -268,8 +283,8 @@ const maxSpreadIdx = spreads.length - 1;
   const flipVisible = useMemo(() => {
     if (!flipState) return null;
     const { dir, fromSpread, toSpread } = flipState;
-    const from = spreads[fromSpread] ?? { left: null, right: null };
-    const to   = spreads[toSpread] ?? { left: null, right: null };
+    const from = getSpread(fromSpread);
+    const to   = getSpread(toSpread);
     return {
       bgLeft:    to.left,
       bgRight:   to.right,
