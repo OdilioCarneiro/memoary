@@ -749,10 +749,10 @@ function PageContent({ page, onPhotoClick }) {
   <figcaption style={{
     background: 'var(--paper)',
     padding: '5px 8px',
-    fontSize: 11,
+    fontSize: 16,
     fontFamily: 'var(--f-display)',
     fontStyle: 'italic',
-    color: 'rgba(50,42,24,0.75)',
+    color: 'rgba(50,42,24,0.95)',
     textAlign: 'center',
     letterSpacing: '0.04em',
     borderTop: '1px solid rgba(176,141,62,0.15)',
