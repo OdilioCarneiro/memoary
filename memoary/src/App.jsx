@@ -21,7 +21,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const PAGE_W      = 430;
 const BOOK_H      = 672;
-const SPINE_W     = 6;
+const SPINE_W     = 2;
 const FORE_EDGE_W = 7;
 const SPREAD_W    = PAGE_W * 2 + SPINE_W;   // 882px — always fixed
 const PERSP       = 2600;
@@ -940,7 +940,7 @@ function PhotoModal({ photo: initialPhoto, allPhotos, onClose }) {
           <div style={{position:'absolute',inset:0,backgroundImage:`url(${cur.url})`,backgroundSize:'cover',backgroundPosition:'center',filter:'blur(28px) brightness(0.28) saturate(0.8)',transform:'scale(1.12)'}}/>
           <motion.img key={cur.url} src={cur.url} alt={cur.legenda||'Foto'} initial={{opacity:0}} animate={{opacity:imgLoaded?1:0}} transition={{duration:0.38}} onLoad={()=>setImgLoaded(true)}
             style={{position:'relative',zIndex:1,maxWidth:'92%',maxHeight:'88%',objectFit:'contain',borderRadius:4,userSelect:'none',pointerEvents:'none'}} draggable={false}/>
-          {cur.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:2,background:'linear-gradient(transparent,rgba(0,0,0,0.75))',padding:'36px 24px 18px'}}><p style={{fontFamily:'var(--f-display)',fontStyle:'italic',fontSize:13,color:'rgba(255,255,255,0.8)',letterSpacing:'0.035em',textAlign:'center',margin:0}}>{cur.legenda}</p></div>}
+          {cur.legenda&&<div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:2,background:'linear-gradient(transparent,rgba(0,0,0,0.75))',padding:'36px 24px 18px'}}><p style={{fontFamily:'var(--f-display)',fontStyle:'italic',fontSize:20,color:'rgba(255,255,255,0.8)',letterSpacing:'0.035em',textAlign:'center',margin:0}}>{cur.legenda}</p></div>}
           {hasPrev&&<button onClick={()=>goTo(curIdx-1)} style={{position:'absolute',top:'50%',left:14,transform:'translateY(-50%)',zIndex:3,width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',backdropFilter:'blur(8px)'}}><IcoNavLeft/></button>}
           {hasNext&&<button onClick={()=>goTo(curIdx+1)} style={{position:'absolute',top:'50%',right:14,transform:'translateY(-50%)',zIndex:3,width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',backdropFilter:'blur(8px)'}}><IcoNavRight/></button>}
         </div>
