@@ -85,4 +85,24 @@ export default function LoginPage({ onLoginSuccess }) {
       </div>
     </div>
   );
+  <div className="admin-container">
+  <div className="admin-card">
+
+    {/* Eyebrow dourado */}
+    <span className="admin-card-eyebrow">Acesso Restrito</span>
+
+    <h2 className="admin-title dark">Bem-vindo</h2>
+    <p className="admin-subtitle">Faça login para gerenciar o anuário.</p>
+
+    <form onSubmit={handleLogin} className="admin-form">
+      {/* ... seus inputs e botão ... */}
+    </form>
+
+    {/* Rodapé opcional */}
+    <div className="admin-card-footer">
+      <span className="admin-card-footer-mark">Memoary</span>
+    </div>
+
+  </div>
+</div>
 }

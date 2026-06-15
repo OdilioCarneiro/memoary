@@ -21,7 +21,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const PAGE_W      = 430;
 const BOOK_H      = 672;
-const SPINE_W     = 22;
+const SPINE_W     = 6;
 const FORE_EDGE_W = 7;
 const SPREAD_W    = PAGE_W * 2 + SPINE_W;   // 882px — always fixed
 const PERSP       = 2600;

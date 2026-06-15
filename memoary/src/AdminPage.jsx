@@ -690,7 +690,7 @@ function SpreadElement({ el, isSelected, onSelect, onDragStop, onResizeStop }) {
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           background: 'rgba(255,255,255,0.9)', padding: '5px 8px',
-          fontSize: 10, fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 16, fontFamily: "'Cormorant Garamond', serif",
           color: 'rgba(50,42,24,0.7)', textAlign: 'center', letterSpacing: '0.04em',
         }}>
           {el.legenda}
