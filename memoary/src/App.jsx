@@ -708,28 +708,29 @@ function PageContent({ page, onPhotoClick }) {
       {page.elementos.map((el, i) => {
         if (el.tipo !== 'imagem' || !el.url) return null;
         return (
-          <motion.div
-            key={el.id ?? i}
-            initial="rest"
-            whileHover={onPhotoClick ? 'hover' : 'rest'}
-            onClick={() => onPhotoClick?.(el)}
-            style={{
-              position: 'absolute',
-              left: el.x ?? 0, top: el.y ?? 0,
-              width: el.largura ?? 200, height: el.altura ?? 150,
-              overflow: 'hidden', borderRadius: 3,
-              border: '1px solid rgba(0,0,0,0.06)',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
-              cursor: onPhotoClick ? 'pointer' : 'default',
-              pointerEvents: 'auto', zIndex: 10,
-            }}
-          >
+         <motion.div
+  key={el.id ?? i}
+  initial="rest"
+  whileHover={onPhotoClick ? 'hover' : 'rest'}
+  onClick={() => onPhotoClick?.(el)}
+  style={{
+    position: 'absolute',
+    left: el.x ?? 0, top: el.y ?? 0,
+    width: el.largura ?? 200,
+    overflow: 'visible', borderRadius: 3,
+    border: '1px solid rgba(0,0,0,0.06)',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)',
+    cursor: onPhotoClick ? 'pointer' : 'default',
+    pointerEvents: 'auto', zIndex: 10,
+    display: 'flex', flexDirection: 'column',
+  }}
+>
             <img
-              src={cloudinaryUrl(el.url)}
-              alt={el.legenda ?? 'Foto do anuário'}
-              style={{ width:'100%',height:'100%',objectFit:'cover',display:'block',backgroundColor:'#f5f5f5' }}
-              loading="lazy" draggable={false}
-            />
+  src={cloudinaryUrl(el.url)}
+  alt={el.legenda ?? 'Foto do anuário'}
+  style={{ width:'100%', height: el.altura ?? 150, objectFit:'cover', display:'block', backgroundColor:'#f5f5f5', borderRadius: 3 }}
+  loading="lazy" draggable={false}
+/>
             {onPhotoClick && (
               <motion.div
                 variants={{ rest:{ opacity:0 }, hover:{ opacity:1 } }}
@@ -745,17 +746,20 @@ function PageContent({ page, onPhotoClick }) {
               </motion.div>
             )}
             {el.legenda && (
-              <figcaption style={{
-                position:'absolute',bottom:0,left:0,right:0,
-                background:'rgba(253,249,244,0.96)',backdropFilter:'blur(8px)',
-                padding:'6px 10px',fontSize:15,
-                fontFamily:'var(--f-display)',fontStyle:'italic',
-                letterSpacing:'0.04em',color:'#222',fontWeight:500,
-                textAlign:'center',zIndex:3,
-              }}>
-                {el.legenda}
-              </figcaption>
-            )}
+  <figcaption style={{
+    background: 'var(--paper)',
+    padding: '5px 8px',
+    fontSize: 11,
+    fontFamily: 'var(--f-display)',
+    fontStyle: 'italic',
+    color: 'rgba(50,42,24,0.75)',
+    textAlign: 'center',
+    letterSpacing: '0.04em',
+    borderTop: '1px solid rgba(176,141,62,0.15)',
+  }}>
+    {el.legenda}
+  </figcaption>
+)}
           </motion.div>
         );
       })}
