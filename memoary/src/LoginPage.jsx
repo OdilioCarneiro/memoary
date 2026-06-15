@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './AdminPage.css';
+import './LoginPage.css';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [usuario, setUsuario] = useState('');
@@ -11,29 +11,17 @@ export default function LoginPage({ onLoginSuccess }) {
     e.preventDefault();
     setIsSubmitting(true);
     setErro('');
-
     try {
-      // Aqui está a mágica: ele tenta ler a URL do Render. Se não achar, usa o localhost.
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      
       const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, senha })
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Usuário ou senha incorretos.');
-      }
-
-      // Salvamos o token no navegador
+      if (!response.ok) throw new Error(data.message || 'Usuário ou senha incorretos.');
       localStorage.setItem('adminToken', data.token);
-      
-      // Avisa o aplicativo que o login foi feito com sucesso
       onLoginSuccess();
-
     } catch (error) {
       setErro(error.message);
     } finally {
@@ -43,15 +31,17 @@ export default function LoginPage({ onLoginSuccess }) {
 
   return (
     <div className="admin-container">
-      <div className="admin-card" style={{ maxWidth: '400px' }}>
+      <div className="admin-card">
+
+        <span className="admin-card-eyebrow">Anuário</span>
         <h2 className="admin-title dark">Acesso Restrito</h2>
         <p className="admin-subtitle">Faça login para gerenciar o anuário.</p>
 
         <form onSubmit={handleLogin} className="admin-form">
           <div className="input-group">
             <label htmlFor="usuario" className="admin-label">Usuário</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               id="usuario"
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
@@ -62,8 +52,8 @@ export default function LoginPage({ onLoginSuccess }) {
 
           <div className="input-group">
             <label htmlFor="senha" className="admin-label">Senha</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               id="senha"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
@@ -73,36 +63,19 @@ export default function LoginPage({ onLoginSuccess }) {
           </div>
 
           {erro && (
-            <div className="feedback-message error">
-              {erro}
-            </div>
+            <div className="feedback-message error">{erro}</div>
           )}
 
           <button type="submit" className="submit-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
+        <div className="admin-card-footer">
+          <span className="admin-card-footer-mark">Memoary</span>
+        </div>
+
       </div>
     </div>
   );
-  <div className="admin-container">
-  <div className="admin-card">
-
-    {/* Eyebrow dourado */}
-    <span className="admin-card-eyebrow">Acesso Restrito</span>
-
-    <h2 className="admin-title dark">Bem-vindo</h2>
-    <p className="admin-subtitle">Faça login para gerenciar o anuário.</p>
-
-    <form onSubmit={handleLogin} className="admin-form">
-      {/* ... seus inputs e botão ... */}
-    </form>
-
-    {/* Rodapé opcional */}
-    <div className="admin-card-footer">
-      <span className="admin-card-footer-mark">Memoary</span>
-    </div>
-
-  </div>
-</div>
 }
