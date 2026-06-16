@@ -366,3 +366,13 @@ app.patch('/api/sugestoes/:id', async (req, res) => {
     res.status(500).json({ success: false, message: 'Erro ao atualizar.' });
   }
 });
+
+app.post('/api/sugestoes-teste', async (req, res) => {
+  try {
+    const b64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const cldRes = await cloudinary.uploader.upload(b64, { folder: 'anuario_sugestoes' });
+    res.json({ success: true, url: cldRes.secure_url });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
