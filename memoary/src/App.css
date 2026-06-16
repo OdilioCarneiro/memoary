@@ -1141,3 +1141,23 @@ input[placeholder="Adicione um comentário…"]::placeholder {
     display: none !important;
   }
 }
+
+.btn-sugestao {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--gold-muted);
+  background: var(--gold-subtle);
+  font-family: var(--f-ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--gold);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.btn-sugestao:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--white);
+}

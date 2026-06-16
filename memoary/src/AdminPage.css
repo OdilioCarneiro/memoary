@@ -82,7 +82,7 @@
 }
 
 .admin-sidebar__header {
-  padding: 22px 20px 18px;
+  padding: 22px 20px 16px;
   border-bottom: 1px solid var(--admin-border);
 }
 
@@ -105,6 +105,60 @@
   padding: 14px 16px 10px;
 }
 
+/* ─── Abas ─── */
+.admin-tabs {
+  display: flex;
+  gap: 5px;
+  margin-top: 14px;
+}
+
+.admin-tab {
+  flex: 1;
+  position: relative;
+  padding: 6px 0;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--admin-border);
+  background: transparent;
+  color: var(--admin-text-muted);
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  transition: all var(--admin-transition);
+}
+
+.admin-tab:hover:not(.admin-tab--active) {
+  border-color: rgba(200,170,105,0.4);
+  color: var(--admin-text-secondary);
+}
+
+.admin-tab--active {
+  border-color: var(--admin-gold);
+  background: var(--admin-gold-light);
+  color: var(--admin-gold-dark);
+}
+
+.admin-tab__badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  background: var(--admin-danger);
+  color: #fff;
+  border-radius: 50%;
+  width: 17px;
+  height: 17px;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(155,28,28,0.3);
+}
+
+/* ─── Botão Novo Spread ─── */
 .admin-btn-new {
   width: 100%;
   padding: 11px 16px;
@@ -182,7 +236,7 @@
   box-shadow: 0 0 0 3px rgba(200,170,105,0.1);
 }
 
-/* Spread card (engloba os dois lados) */
+/* Spread card */
 .admin-spread-card {
   padding: 10px;
   background: var(--admin-surface-2);
@@ -279,6 +333,134 @@
 }
 
 /* =============================================
+   SUGESTÕES — cards na sidebar
+   ============================================= */
+.admin-sugestoes__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 48px;
+  color: var(--admin-text-muted);
+  font-size: 13px;
+}
+
+.admin-sugestao-card {
+  background: var(--admin-surface-2);
+  border: 1.5px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: 10px;
+  transition: opacity var(--admin-transition), border-color var(--admin-transition);
+}
+
+.admin-sugestao-card:not(.admin-sugestao-card--inativa):hover {
+  border-color: rgba(200,170,105,0.4);
+}
+
+.admin-sugestao-card--inativa {
+  opacity: 0.5;
+}
+
+.admin-sugestao-card__img-wrap {
+  width: 100%;
+  height: 84px;
+  border-radius: var(--admin-radius-sm);
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: var(--admin-surface-3);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-sugestao-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-sugestao-card__nome {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+
+.admin-sugestao-card__msg {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  margin: 0 0 6px;
+  line-height: 1.45;
+}
+
+.admin-sugestao-card__data {
+  font-size: 10px;
+  color: var(--admin-text-muted);
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+
+.admin-sugestao-card__actions {
+  display: flex;
+  gap: 5px;
+}
+
+.admin-sugestao-card__btn-copiar {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--admin-text-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  transition: all var(--admin-transition);
+  letter-spacing: 0.02em;
+}
+
+.admin-sugestao-card__btn-copiar:hover {
+  background: #2f2717;
+  transform: translateY(-1px);
+}
+
+.admin-sugestao-card__btn-rejeitar {
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid var(--admin-danger-border);
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  transition: all var(--admin-transition);
+  line-height: 1;
+}
+
+.admin-sugestao-card__btn-rejeitar:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.admin-sugestao-card__status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.admin-sugestao-card__status--aprovada {
+  color: var(--admin-success);
+}
+
+.admin-sugestao-card__status--rejeitada {
+  color: var(--admin-danger);
+}
+
+/* =============================================
    CANVAS CENTRAL
    ============================================= */
 .admin-canvas {
@@ -290,7 +472,6 @@
   background-image:
     radial-gradient(circle at 25% 25%, rgba(255,255,255,0.04) 0%, transparent 50%),
     radial-gradient(circle at 75% 75%, rgba(0,0,0,0.03) 0%, transparent 50%);
-  /* Permite scroll horizontal para o spread duplo */
   overflow: auto;
   min-width: 0;
 }
@@ -371,14 +552,14 @@
   opacity: 0.65;
 }
 
-/* Canvas scroll area — espaço com padding generoso para o spread duplo caber */
+/* Canvas scroll area */
 .admin-canvas__scroll {
   padding: 40px 48px 96px;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100%;
-  min-width: max-content; /* evita comprimir o spread */
+  min-width: max-content;
 }
 
 /* Palco de página única */
@@ -394,7 +575,6 @@
   flex-shrink: 0;
 }
 
-/* Sombra da lombada — agora injetada inline por lado */
 .admin-stage__spine-shadow {
   position: absolute;
   left: 0; top: 0; bottom: 0;
@@ -577,6 +757,7 @@
   background: var(--admin-surface-2);
   outline: none;
   transition: border-color var(--admin-transition), box-shadow var(--admin-transition);
+  box-sizing: border-box;
 }
 
 .admin-input:focus {
@@ -727,10 +908,11 @@
     flex-wrap: nowrap;
     padding: 10px 12px;
     gap: 8px;
-    max-height: 160px;
+    max-height: 200px;
   }
 
-  .admin-spread-card { flex-shrink: 0; width: 160px; }
+  .admin-spread-card  { flex-shrink: 0; width: 160px; }
+  .admin-sugestao-card { flex-shrink: 0; width: 180px; }
 
   .admin-canvas { min-height: 600px; }
 

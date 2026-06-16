@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Rnd } from 'react-rnd';
 import './AdminPage.css';
 
+
+
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3001'
   : 'https://memoary.onrender.com';
@@ -49,16 +51,39 @@ export default function AdminPage() {
   const [isLoading,    setIsLoading]    = useState(true);
   const [isSaving,     setIsSaving]     = useState(false);
   const [activeSpreadIdx, setActiveSpreadIdx] = useState(null);
-  // selectedId: id do elemento selecionado, prefixado com side: 'left:uuid' | 'right:uuid'
   const [selectedKey,  setSelectedKey]  = useState(null);
   const [toast,        setToast]        = useState(null);
   const [uploading,    setUploading]    = useState(false);
   const fileInputRef = useRef(null);
 
+  // ── Aba de Sugestões ──
+  const [abaAtiva, setAbaAtiva] = useState('spreads'); // 'spreads' | 'sugestoes'
+  const [sugestoes, setSugestoes] = useState([]);
+  const [loadingSugestoes, setLoadingSugestoes] = useState(false);
+
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3200);
   }, []);
+
+  // Carrega sugestões quando a aba é aberta
+  useEffect(() => {
+    if (abaAtiva !== 'sugestoes') return;
+
+    (async () => {
+      setLoadingSugestoes(true);
+      try {
+        const res = await fetch(`${API_URL}/api/sugestoes`);
+        const json = await res.json();
+        if (json.success) setSugestoes(json.data);
+      } catch { showToast('Erro ao carregar sugestões', 'error'); }
+      finally { setLoadingSugestoes(false); }
+    })();
+  }, [abaAtiva, showToast]);
+
+  const usarSugestao = (url) => {
+    navigator.clipboard.writeText(url).then(() => showToast('URL copiada! Cole no campo de imagem.'));
+  };
 
   /* ── Cloudinary upload ── */
   const uploadToCloudinary = useCallback(async (file) => {
@@ -87,7 +112,6 @@ export default function AdminPage() {
         const json = await res.json();
         if (json.success) {
           let data = json.data;
-          // Garante par
           if (data.length % 2 === 1) {
             const r2   = await fetch(`${API_URL}/api/anuario/nova-pagina`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -190,7 +214,6 @@ export default function AdminPage() {
     if (!activeSpread || isSaving) return;
     setIsSaving(true);
     try {
-      // Pega versão mais recente do pages state
       const lp = pages.find(p => p._id === leftPage?._id)  ?? leftPage;
       const rp = pages.find(p => p._id === rightPage?._id) ?? rightPage;
       const [okL, okR] = await Promise.all([savePage(lp), savePage(rp)]);
@@ -236,6 +259,8 @@ export default function AdminPage() {
     );
   }
 
+  const pendentesCount = sugestoes.filter(s => s.status === 'pendente').length;
+
   /* ─────────────────────────────────────────────
      RENDER
   ──────────────────────────────────────────────*/
@@ -253,70 +278,154 @@ export default function AdminPage() {
           <p className="admin-sidebar__subtitle">
             {spreads.length} {spreads.length === 1 ? 'spread' : 'spreads'} · {pages.length} páginas
           </p>
-        </div>
-        <div className="admin-sidebar__actions">
-          <button className="admin-btn-new" onClick={handleNovaPagina}>
-            <span className="admin-btn-new__icon">+</span>
-            Novo Spread
-          </button>
-        </div>
 
-        <div className="admin-sidebar__list">
-          {spreads.length === 0 && (
-            <p className="admin-sidebar__empty">Nenhuma página ainda.<br />Crie o primeiro spread.</p>
-          )}
-
-          {spreads.map((spread) => {
-            const isActive = activeSpreadIdx === spread.idx;
-            return (
-              <div
-                key={`spread-${spread.idx}`}
-                className={`admin-spread-card${isActive ? ' admin-spread-card--active' : ''}`}
-                onClick={() => { setActiveSpreadIdx(spread.idx); setSelectedKey(null); }}
-                style={{ cursor: 'pointer' }}
+          {/* Abas */}
+          <div className="admin-tabs">
+            {['spreads', 'sugestoes'].map(aba => (
+              <button
+                key={aba}
+                className={`admin-tab${abaAtiva === aba ? ' admin-tab--active' : ''}`}
+                onClick={() => setAbaAtiva(aba)}
               >
-                {/* Miniatura do spread em linha */}
-                <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                  {/* Esquerda */}
-                  <div style={{ flex: 1 }}>
-                    <PageThumb page={spread.left} />
-                  </div>
-                  {/* Divisor */}
-                  <div style={{ width: 2, background: 'var(--admin-border)', borderRadius: 1, flexShrink: 0 }} />
-                  {/* Direita */}
-                  <div style={{ flex: 1 }}>
-                    <PageThumb page={spread.right} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <span className="admin-page-card__label">Spread {spread.idx + 1}</span>
-                    <span className="admin-page-card__count">
-                      {(spread.left?.elementos?.length || 0) + (spread.right?.elementos?.length || 0)} foto(s)
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {spread.left && (
-                      <button
-                        className="admin-page-card__delete"
-                        onClick={e => { e.stopPropagation(); handleExcluirPagina(spread.left._id); }}
-                        title="Remover página esquerda"
-                      >×</button>
-                    )}
-                    {spread.right && (
-                      <button
-                        className="admin-page-card__delete"
-                        onClick={e => { e.stopPropagation(); handleExcluirPagina(spread.right._id); }}
-                        title="Remover página direita"
-                      >×</button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                {aba === 'spreads' ? 'Spreads' : 'Sugestões'}
+                {aba === 'sugestoes' && pendentesCount > 0 && (
+                  <span className="admin-tab__badge">{pendentesCount}</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Conteúdo condicional por aba */}
+        {abaAtiva === 'spreads' ? (
+          <>
+            <div className="admin-sidebar__actions">
+              <button className="admin-btn-new" onClick={handleNovaPagina}>
+                <span className="admin-btn-new__icon">+</span>
+                Novo Spread
+              </button>
+            </div>
+
+            <div className="admin-sidebar__list">
+              {spreads.length === 0 && (
+                <p className="admin-sidebar__empty">Nenhuma página ainda.<br />Crie o primeiro spread.</p>
+              )}
+
+              {spreads.map((spread) => {
+                const isActive = activeSpreadIdx === spread.idx;
+                return (
+                  <div
+                    key={`spread-${spread.idx}`}
+                    className={`admin-spread-card${isActive ? ' admin-spread-card--active' : ''}`}
+                    onClick={() => { setActiveSpreadIdx(spread.idx); setSelectedKey(null); }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <PageThumb page={spread.left} />
+                      </div>
+                      <div style={{ width: 2, background: 'var(--admin-border)', borderRadius: 1, flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <PageThumb page={spread.right} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <span className="admin-page-card__label">Spread {spread.idx + 1}</span>
+                        <span className="admin-page-card__count">
+                          {(spread.left?.elementos?.length || 0) + (spread.right?.elementos?.length || 0)} foto(s)
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {spread.left && (
+                          <button
+                            className="admin-page-card__delete"
+                            onClick={e => { e.stopPropagation(); handleExcluirPagina(spread.left._id); }}
+                            title="Remover página esquerda"
+                          >×</button>
+                        )}
+                        {spread.right && (
+                          <button
+                            className="admin-page-card__delete"
+                            onClick={e => { e.stopPropagation(); handleExcluirPagina(spread.right._id); }}
+                            title="Remover página direita"
+                          >×</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="admin-sidebar__list">
+            {loadingSugestoes ? (
+              <div className="admin-sugestoes__loading">
+                <div className="admin-loading__spinner" style={{ width: 20, height: 20 }} />
+                <span>Carregando…</span>
+              </div>
+            ) : sugestoes.length === 0 ? (
+              <p className="admin-sidebar__empty">Nenhuma sugestão recebida ainda.</p>
+            ) : (
+              sugestoes.map(s => (
+                <div
+                  key={s._id}
+                  className={`admin-sugestao-card${s.status !== 'pendente' ? ' admin-sugestao-card--inativa' : ''}`}
+                >
+                  {/* Preview da foto */}
+                  <div className="admin-sugestao-card__img-wrap">
+                    <img src={s.url} alt="" className="admin-sugestao-card__img" />
+                  </div>
+
+                  {/* Metadados */}
+                  <p className="admin-sugestao-card__nome">{s.nome || 'Anônimo'}</p>
+                  {s.mensagem && (
+                    <p className="admin-sugestao-card__msg">{s.mensagem}</p>
+                  )}
+                  <p className="admin-sugestao-card__data">
+                    {new Date(s.criadoEm).toLocaleDateString('pt-BR', {
+                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+
+                  {/* Ações */}
+                  {s.status === 'pendente' ? (
+                    <div className="admin-sugestao-card__actions">
+                      <button
+                        className="admin-sugestao-card__btn-copiar"
+                        onClick={() => usarSugestao(s.url)}
+                      >
+                        Copiar URL
+                      </button>
+                      <button
+                        className="admin-sugestao-card__btn-rejeitar"
+                        onClick={async () => {
+                          await fetch(`${API_URL}/api/sugestoes/${s._id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: 'rejeitada' }),
+                          });
+                          setSugestoes(prev =>
+                            prev.map(x => x._id === s._id ? { ...x, status: 'rejeitada' } : x)
+                          );
+                        }}
+                        title="Rejeitar sugestão"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={`admin-sugestao-card__status admin-sugestao-card__status--${s.status}`}>
+                      {s.status === 'aprovada' ? '✓ Aprovada' : '× Rejeitada'}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </aside>
 
       {/* ── CANVAS CENTRAL ── */}
@@ -325,7 +434,6 @@ export default function AdminPage() {
           <>
             {/* Toolbar */}
             <div className="admin-toolbar">
-              {/* Botões de adicionar foto em cada lado */}
               <button
                 className="admin-btn admin-btn--primary"
                 onClick={() => addPhoto('left')}
@@ -473,7 +581,6 @@ export default function AdminPage() {
                 </div>
 
               </div>
-              {/* Legenda geral */}
               <p style={{ marginTop: 10, fontSize: 10, color: 'var(--admin-text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.65, textAlign: 'center' }}>
                 Clique numa página para ativá-la, depois arraste as fotos livremente
               </p>
@@ -535,7 +642,6 @@ export default function AdminPage() {
                       const url = await uploadToCloudinary(f);
                       if (url) {
                         updateEl(selSide, selId, { url });
-                        // Auto-save após upload
                         const pg = getPage(selSide);
                         if (pg) {
                           const updatedPg = {

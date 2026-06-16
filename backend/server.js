@@ -298,3 +298,71 @@ app.post('/api/comentarios/:id/like', async (req, res) => {
     res.status(500).json({ success: false, message: 'Erro ao processar curtida.' });
   }
 });
+
+// ==========================================
+// ROTAS DE SUGESTÕES DE FOTOS
+// ==========================================
+
+/* ── POST /api/sugestoes ── recebe upload + metadados */
+app.post('/api/sugestoes', upload.single('image'), async (req, res) => {
+  try {
+    const { nome, mensagem } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Nenhuma imagem enviada.' });
+    }
+
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = 'data:' + req.file.mimetype + ';base64,' + b64;
+
+    const cldRes = await cloudinary.uploader.upload(dataURI, {
+      folder: 'anuario_sugestoes',
+    });
+
+    const sugestao = {
+      url: cldRes.secure_url,
+      nome: (nome || 'Anônimo').trim().substring(0, 60),
+      mensagem: (mensagem || '').trim().substring(0, 280),
+      status: 'pendente', // 'pendente' | 'aprovada' | 'rejeitada'
+      criadoEm: new Date(),
+    };
+
+    const colecao = db.collection('sugestoes');
+    const resultado = await colecao.insertOne(sugestao);
+
+    res.status(201).json({ success: true, data: { ...sugestao, _id: resultado.insertedId } });
+  } catch (error) {
+    console.error('Erro ao salvar sugestão:', error);
+    res.status(500).json({ success: false, message: 'Erro ao processar sugestão.' });
+  }
+});
+
+/* ── GET /api/sugestoes ── lista para o admin */
+app.get('/api/sugestoes', async (req, res) => {
+  try {
+    const colecao = db.collection('sugestoes');
+    const sugestoes = await colecao
+      .find({})
+      .sort({ criadoEm: -1 })
+      .limit(100)
+      .toArray();
+    res.json({ success: true, data: sugestoes });
+  } catch (error) {
+    console.error('Erro ao buscar sugestões:', error);
+    res.status(500).json({ success: false, message: 'Erro ao buscar sugestões.' });
+  }
+});
+
+/* ── PATCH /api/sugestoes/:id ── admin atualiza status */
+app.patch('/api/sugestoes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'aprovada' | 'rejeitada'
+    const colecao = db.collection('sugestoes');
+    await colecao.updateOne({ _id: new ObjectId(id) }, { $set: { status } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao atualizar sugestão:', error);
+    res.status(500).json({ success: false, message: 'Erro ao atualizar.' });
+  }
+});
