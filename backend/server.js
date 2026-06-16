@@ -304,6 +304,7 @@ app.post('/api/comentarios/:id/like', async (req, res) => {
 // ==========================================
 
 /* ── POST /api/sugestoes ── recebe upload + metadados */
+/* ── POST /api/sugestoes ── recebe upload + metadados */
 app.post('/api/sugestoes', upload.single('image'), async (req, res) => {
   try {
     const { nome, mensagem } = req.body;
@@ -315,15 +316,27 @@ app.post('/api/sugestoes', upload.single('image'), async (req, res) => {
     const b64 = Buffer.from(req.file.buffer).toString('base64');
     const dataURI = 'data:' + req.file.mimetype + ';base64,' + b64;
 
-    const cldRes = await cloudinary.uploader.upload(dataURI, {
-      folder: 'anuario_sugestoes',
-    });
+    // Usa o preset não-assinado em vez do SDK
+    const fd = new FormData();
+    fd.append('file', dataURI);
+    fd.append('upload_preset', 'memoary');
+    fd.append('folder', 'anuario_sugestoes');
+
+    const cldResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/dncqbrkuq/image/upload`,
+      { method: 'POST', body: fd }
+    );
+    const cldJson = await cldResponse.json();
+
+    if (!cldJson.secure_url) {
+      return res.status(500).json({ success: false, message: 'Erro no Cloudinary', detail: cldJson.error?.message });
+    }
 
     const sugestao = {
-      url: cldRes.secure_url,
+      url: cldJson.secure_url,
       nome: (nome || 'Anônimo').trim().substring(0, 60),
       mensagem: (mensagem || '').trim().substring(0, 280),
-      status: 'pendente', // 'pendente' | 'aprovada' | 'rejeitada'
+      status: 'pendente',
       criadoEm: new Date(),
     };
 
@@ -333,7 +346,7 @@ app.post('/api/sugestoes', upload.single('image'), async (req, res) => {
     res.status(201).json({ success: true, data: { ...sugestao, _id: resultado.insertedId } });
   } catch (error) {
     console.error('Erro ao salvar sugestão:', error);
-    res.status(500).json({ success: false, message: 'Erro ao processar sugestão.' });
+    res.status(500).json({ success: false, message: 'Erro ao processar sugestão.', erro: error.message });
   }
 });
 
@@ -364,15 +377,5 @@ app.patch('/api/sugestoes/:id', async (req, res) => {
   } catch (error) {
     console.error('Erro ao atualizar sugestão:', error);
     res.status(500).json({ success: false, message: 'Erro ao atualizar.' });
-  }
-});
-
-app.get('/api/sugestoes-teste', async (req, res) => {
-  try {
-    const b64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-    const cldRes = await cloudinary.uploader.upload(b64, { folder: 'anuario_sugestoes' });
-    res.json({ success: true, url: cldRes.secure_url });
-  } catch (error) {
-    res.json({ success: false, error: error.message });
   }
 });
