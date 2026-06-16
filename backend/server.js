@@ -1,5 +1,4 @@
 import express from 'express';
-// 👇 Importamos o ObjectId do jeito certo e moderno aqui!
 import { MongoClient, ObjectId } from 'mongodb';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
