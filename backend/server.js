@@ -7,7 +7,7 @@ import cors from 'cors';
 import { Buffer } from 'buffer';
 import process from 'process';
 
-// INICIALIZA O DOTENV (Lê o arquivo .env se você estiver rodando no seu computador)
+
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -15,9 +15,7 @@ const app = express();
 app.use(cors()); 
 app.use(express.json());
 
-// ==========================================
-// 1. CONFIGURAÇÃO DO CLOUDINARY USANDO .ENV
-// ==========================================
+
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -27,9 +25,6 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// ==========================================
-// 2. STRING DO MONGODB USANDO .ENV
-// ==========================================
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 let db;
@@ -45,7 +40,7 @@ async function conectarBanco() {
 }
 conectarBanco();
 
-// Rota POST para Upload e Criação de Página
+
 app.post('/api/anuario', upload.single('image'), async (req, res) => {
   try {
     const { legenda } = req.body;
@@ -120,8 +115,8 @@ app.get('/api/anuario', async (req, res) => {
   }
 });
 
-// ROTA PARA CRIAR UMA PÁGINA EM BRANCO
-// ROTA PARA CRIAR UMA PÁGINA EM BRANCO
+
+
 app.post('/api/anuario/nova-pagina', async (req, res) => {
   try {
     const { lado } = req.body; // 'esquerda' ou 'direita'
@@ -216,11 +211,8 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   }
 });
 
-// ==========================================
-// ROTAS DE COMENTÁRIOS (MONGODB NATIVO)
-// ==========================================
 
-/* ── GET /api/comentarios/:photoId ── */
+
 app.get('/api/comentarios/:photoId', async (req, res) => {
   try {
     const { photoId } = req.params;
@@ -240,7 +232,7 @@ app.get('/api/comentarios/:photoId', async (req, res) => {
   }
 });
 
-/* ── POST /api/comentarios ── */
+
 app.post('/api/comentarios', async (req, res) => {
   try {
     const { photoId, autor, texto } = req.body;
@@ -249,7 +241,7 @@ app.post('/api/comentarios', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Campos obrigatórios ausentes.' });
     }
 
-    // Criamos o objeto manualmente, limitando o tamanho igual o Schema fazia
+  
     const novoComentario = {
       photoId,
       autor: autor.trim().substring(0, 60), 
@@ -261,7 +253,7 @@ app.post('/api/comentarios', async (req, res) => {
     const colecao = db.collection('comentarios');
     const resultado = await colecao.insertOne(novoComentario);
 
-    // Devolvemos o objeto criado junto com o _id que o MongoDB gerou
+
     res.status(201).json({ 
       success: true, 
       data: { ...novoComentario, _id: resultado.insertedId } 
@@ -272,7 +264,6 @@ app.post('/api/comentarios', async (req, res) => {
   }
 });
 
-/* ── POST /api/comentarios/:id/like ── */
 app.post('/api/comentarios/:id/like', async (req, res) => {
   try {
     const { id } = req.params;
@@ -280,12 +271,11 @@ app.post('/api/comentarios/:id/like', async (req, res) => {
     const delta = unlike ? -1 : 1;
 
     const colecao = db.collection('comentarios');
-    
-    // findOneAndUpdate com returnDocument: 'after' substitui o { new: true } do Mongoose
+ 
     const resultado = await colecao.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $inc: { likes: delta } },
-      { returnDocument: 'after' } // Garante que a variável 'resultado' tenha os dados pós-atualização
+      { returnDocument: 'after' }
     );
 
     if (!resultado) {
@@ -299,12 +289,6 @@ app.post('/api/comentarios/:id/like', async (req, res) => {
   }
 });
 
-// ==========================================
-// ROTAS DE SUGESTÕES DE FOTOS
-// ==========================================
-
-/* ── POST /api/sugestoes ── recebe upload + metadados */
-/* ── POST /api/sugestoes ── recebe upload + metadados */
 app.post('/api/sugestoes', upload.single('image'), async (req, res) => {
   try {
     const { nome, mensagem } = req.body;
